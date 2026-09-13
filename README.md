@@ -96,10 +96,15 @@ docker run --rm -v "$PWD:/work" -w /work devkitpro/devkita64 make -j$(nproc)
 ```
 
 The result is `switchnet.nro` — copy it to `/switch/` on your SD card.
-Releases are also built automatically by the GitHub Actions workflow, which
-attaches the `.nro` to every tagged release (`vX.Y.Z`, matching
-`APP_VERSION` in the `Makefile` and `SWITCHNET_VERSION_*` in
-`source/version.h` — keep the three in lockstep, the CI job checks this).
+
+Releases are fully automatic: the GitHub Actions workflow builds every push
+to `main`, and a push that bumps `APP_VERSION` (in the `Makefile`, kept in
+lockstep with `SWITCHNET_VERSION_*` in `source/version.h` — the CI job checks
+this) cuts a new GitHub release for that version, tagged `vX.Y.Z`, with the
+`.nro` attached. No manual tagging needed; re-running CI against a version
+that's already released is a no-op. The project is currently in its beta
+phase (major version `0`) — release titles read `beta-MAJOR.MINOR` and the
+in-app header does too, until it graduates to `1.0.0`.
 
 ## Disclaimer
 

@@ -57,8 +57,14 @@ static const char *menuLabel(int i, char *buf, size_t cap) {
 }
 
 static void drawHeader(void) {
-    printf("SwitchNet Toolbox  v%d.%d.%d\n",
-           SWITCHNET_VERSION_MAJOR, SWITCHNET_VERSION_MINOR, SWITCHNET_VERSION_PATCH);
+    // While the major version is 0 this project is still in beta — say so
+    // plainly instead of implying a 1.0-grade release.
+    if (SWITCHNET_VERSION_MAJOR == 0)
+        printf("SwitchNet Toolbox  beta-%d.%d.%d\n",
+               SWITCHNET_VERSION_MAJOR, SWITCHNET_VERSION_MINOR, SWITCHNET_VERSION_PATCH);
+    else
+        printf("SwitchNet Toolbox  v%d.%d.%d\n",
+               SWITCHNET_VERSION_MAJOR, SWITCHNET_VERSION_MINOR, SWITCHNET_VERSION_PATCH);
     printf("========================================\n\n");
     printf("Current mode : %s\n",
            apply_current_mode() == SWITCHNET_MODE_SWITCHNET ? "SWITCHNET" : "DEFAULT");

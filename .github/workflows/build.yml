@@ -1,17 +1,15 @@
-# Builds the SwitchNet Toolbox .nro on every push/PR, and attaches it to the
-# release when a v* tag is pushed.
+# Builds the SwitchNet Toolbox .nro on every push/PR. Every push to `main`
+# that bumps APP_VERSION also cuts a GitHub release automatically — no manual
+# tag push needed. Re-running the workflow against a version that already has
+# a release (e.g. a docs-only push) is a no-op for the release step.
 name: Build NRO
 
 on:
   push:
     branches: [main]
-    tags: ["v*"]
   pull_request:
     branches: [main]
   workflow_dispatch:
-
-permissions:
-  contents: write
 
 concurrency:
   group: build-${{ github.workflow }}-${{ github.ref }}
@@ -22,6 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: devkitpro/devkita64:latest
+    outputs:
+      app_version: ${{ steps.version.outputs.app_version }}
+      release_name: ${{ steps.version.outputs.release_name }}
 
     steps:
       - name: Checkout
@@ -31,7 +32,12 @@ jobs:
         id: version
         run: |
           APP_VERSION=$(sed -n 's/^APP_VERSION := *//p' Makefile)
+          MAJOR=$(echo "${APP_VERSION}" | cut -d. -f1)
+          MINOR=$(echo "${APP_VERSION}" | cut -d. -f2)
           echo "app_version=${APP_VERSION}" >> "$GITHUB_OUTPUT"
+          # Beta phase (major version 0): release title tracks major.minor,
+          # e.g. 0.1.0 -> "beta-0.1". Update this once the project leaves 0.x.
+          echo "release_name=beta-${MAJOR}.${MINOR}" >> "$GITHUB_OUTPUT"
           echo "APP_VERSION from Makefile: ${APP_VERSION}"
 
       - name: Check version alignment
@@ -45,15 +51,6 @@ jobs:
           echo "version.h semver fallback = ${FALLBACK}"
           if [ "${APP_VERSION}" != "${FALLBACK}" ]; then
             echo "::error::Version mismatch between Makefile and source/version.h"
-            exit 1
-          fi
-
-      - name: Check tag matches version
-        if: github.ref_type == 'tag'
-        run: |
-          APP_VERSION=$(sed -n 's/^APP_VERSION := *//p' Makefile)
-          if [ "v${APP_VERSION}" != "${{ github.ref_name }}" ]; then
-            echo "::error::Tag ${{ github.ref_name }} does not match APP_VERSION v${APP_VERSION}"
             exit 1
           fi
 
@@ -72,9 +69,42 @@ jobs:
           path: SwitchNet-Toolbox-v${{ steps.version.outputs.app_version }}.nro
           if-no-files-found: error
 
-      - name: Upload NRO to release
-        if: github.ref_type == 'tag'
+  release:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check whether this version was already released
+        id: tagcheck
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: v${{ needs.build.outputs.app_version }}
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/${TAG}")
+          if [ "${STATUS}" = "200" ]; then
+            echo "::notice::${TAG} already has a release; skipping (bump APP_VERSION to release again)."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download NRO artifact
+        if: steps.tagcheck.outputs.exists == 'false'
+        uses: actions/download-artifact@v4
+        with:
+          name: SwitchNet-Toolbox-v${{ needs.build.outputs.app_version }}
+
+      - name: Create release
+        if: steps.tagcheck.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          files: SwitchNet-Toolbox-v${{ steps.version.outputs.app_version }}.nro
+          tag_name: v${{ needs.build.outputs.app_version }}
+          name: ${{ needs.build.outputs.release_name }}
+          files: SwitchNet-Toolbox-v${{ needs.build.outputs.app_version }}.nro
           generate_release_notes: true
