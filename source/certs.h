@@ -1,24 +1,22 @@
 // SwitchNet Toolbox — certificate trust provisioning.
 //
-// A private server needs the console to trust its TLS certificate. On real
-// Atmosphère consoles that normally takes firmware-build-specific ExeFS/NRO
-// IPS patches (to skip the system CA check) plus a browser-trusted root CA
-// for WebView-based account linking — both of which have to be generated
-// against SwitchNet's actual certificate and a matched set of firmware
-// build IDs.
+// A private server needs the console to trust its TLS certificate. This
+// module installs SwitchNet's root CA (romfs/certs/*.pem — the actual
+// certificate, embedded at build time) at the paths the browser applet's CA
+// bundle and WebView-based account linking read from.
 //
-// Until those are provided, this module ships and installs PLACEHOLDER files
-// at the exact paths the real ones will occupy, so the rest of the apply/
-// restore flow (and this app's update mechanism for refreshing them later)
-// is already wired up. Replace the files under romfs/certs/ with the real
-// SwitchNet certificate material and this code does not need to change.
+// Not covered here: on real Atmosphère consoles, getting a game's own SSL
+// stack to accept a private server's certificate typically also needs
+// firmware-build-specific ExeFS/NRO IPS patches (to skip the system CA
+// check), generated against a matched set of firmware build IDs. That's a
+// separate piece of work from installing the CA itself and isn't included.
 #ifndef SWITCHNET_CERTS_H
 #define SWITCHNET_CERTS_H
 
 #include <stdbool.h>
 
-// Copies the (currently stub) certificate files from romfs:/certs/ to their
-// target locations on the SD card. Requires romfsInit() to already be active.
+// Copies SwitchNet's root CA files from romfs:/certs/ to their target
+// locations on the SD card. Requires romfsInit() to already be active.
 bool certs_provision(void);
 
 // Removes every file certs_provision() installs, and prunes any directory

@@ -52,7 +52,7 @@ SwitchNet IP : 9.205.104.23
 | DNS-MITM on/off | `/atmosphere/config/system_settings.ini` |
 | Hosts backup | `sdmc:/switchnet/hosts_backup/` (mirrors the whole hosts folder) |
 | App settings (IP, flags) | `sdmc:/switchnet/config.cfg` |
-| Certificate stubs | `sdmc:/rootCA.pem`, `sdmc:/switchnet/certs/`, and the console's browser CA bundle under `sdmc:/atmosphere/contents/0100000000000803/romfs/browser/` |
+| Certificates | `sdmc:/rootCA.pem`, `sdmc:/switchnet/certs/`, and the console's browser CA bundle under `sdmc:/atmosphere/contents/0100000000000803/romfs/browser/` |
 | Debug trace | `sdmc:/switchnet/trace.txt` |
 
 Because it only writes files Atmosphère (and the console's browser applet)
@@ -68,23 +68,21 @@ infrastructure grows.
 
 ## Certificates
 
-This app installs certificate files at the exact paths a working install
-needs, but ships **placeholder stubs** — deliberately invalid PEM text, not a
-real certificate — until SwitchNet's actual root CA is available:
+This app installs SwitchNet's actual root CA certificate (`CN=SwitchNet
+Local CA`, embedded at build time) at the paths a working install needs:
 
 - `romfs/certs/switchnet_root_ca.pem` → `sdmc:/switchnet/certs/switchnet_root_ca.pem`
 - `romfs/certs/rootCA.pem` → `sdmc:/rootCA.pem`
 - `romfs/certs/browser/RootCaEtc.pem` / `RootCaSdkAdditional.pem` → the
   console's browser-applet CA bundle, for WebView-based account linking
 
-To finish this once the real certificate is available: replace the four
-files under `romfs/certs/` with SwitchNet's actual PEM-encoded root CA (and
-any intermediate), rebuild, and tag a release — existing installs pick it up
-through the in-app updater. Note that trusting a custom CA system-wide on a
-real console typically also requires firmware-build-specific ExeFS/NRO IPS
-patches to skip certificate verification; those aren't included here and
-depend on SwitchNet's exact certificate and the firmware versions you need to
-support.
+To rotate the certificate later: replace the four files under
+`romfs/certs/` with the new PEM-encoded root CA, bump `APP_VERSION`, and push
+to `main` — CI builds and releases it, and existing installs pick it up
+through the in-app updater. Note that getting a *game's own* SSL stack (as
+opposed to the browser/WebView) to accept this CA typically also requires
+firmware-build-specific ExeFS/NRO IPS patches to skip certificate
+verification; those are a separate piece of work and aren't included here.
 
 ## Building
 
