@@ -23,7 +23,9 @@ static char s_selfTmp[520] = {0};
 void update_set_self_path(const char *argv0) {
     if (!argv0 || !*argv0) return;
     size_t n = strlen(argv0);
-    if (n < 5 || n >= sizeof(s_selfNro)) return;
+    // Leave room for the "sdmc:" prefix the '/'-prefixed branch below may add,
+    // plus the terminator, so the snprintf into s_selfNro can never truncate.
+    if (n < 5 || n >= sizeof(s_selfNro) - 6) return;
     if (strcasecmp(argv0 + n - 4, ".nro") != 0) return;
 
     if (strncmp(argv0, "sdmc:/", 6) == 0)

@@ -136,8 +136,7 @@ static bool promptIpInput(char *out, size_t cap) {
     swkbdClose(&kbd);
 
     if (R_FAILED(rc) || buf[0] == '\0') return false;
-    strncpy(out, buf, cap - 1);
-    out[cap - 1] = '\0';
+    snprintf(out, cap, "%s", buf);
     return true;
 }
 
