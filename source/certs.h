@@ -1,27 +1,36 @@
 // SwitchNet Toolbox — certificate trust provisioning.
 //
 // A private server needs the console to trust its TLS certificate. This
-// module installs SwitchNet's root CA (romfs/certs/*.pem — the actual
-// certificate, embedded at build time) at the paths the browser applet's CA
-// bundle and WebView-based account linking read from.
+// module mirrors romfs:/sd/... onto the SD card, which installs:
 //
-// Not covered here: on real Atmosphère consoles, getting a game's own SSL
-// stack to accept a private server's certificate typically also needs
-// firmware-build-specific ExeFS/NRO IPS patches (to skip the system CA
-// check), generated against a matched set of firmware build IDs. That's a
-// separate piece of work from installing the CA itself and isn't included.
+//  - SwitchNet's root CA (the actual certificate, embedded at build time)
+//    at the paths the browser applet's CA bundle and WebView-based account
+//    linking read from, plus a reference copy under sdmc:/switchnet/certs/.
+//  - The public disable_ca_verification / disable_browser_ca_verification
+//    ExeFS/NRO IPS patches (from misson20000/exefs_patches — one file per
+//    firmware build ID) that make the system SSL service and the browser
+//    applet skip the stock CA check. Without these, installing the CA alone
+//    is not enough: the browser still rejects a self-signed certificate, and
+//    account linking fails to load (this is what error 2123-0308 during
+//    account linking generally means).
+//
+// Atmosphère only applies a patch whose build-ID filename matches the
+// firmware actually running, so shipping patches for every supported
+// firmware is harmless on any given console — unmatched ones simply sit
+// unused.
 #ifndef SWITCHNET_CERTS_H
 #define SWITCHNET_CERTS_H
 
 #include <stdbool.h>
 
-// Copies SwitchNet's root CA files from romfs:/certs/ to their target
-// locations on the SD card. Requires romfsInit() to already be active.
+// Mirrors every file under romfs:/sd/ onto the SD card at the corresponding
+// sdmc:/ path, creating directories as needed and overwriting existing
+// files. Requires romfsInit() to already be active.
 bool certs_provision(void);
 
-// Removes every file certs_provision() installs, and prunes any directory
-// left empty by that removal (never a directory that still holds something
-// else, such as /atmosphere/contents itself).
+// Removes every file certs_provision() would install (by walking the same
+// romfs:/sd/ tree), and prunes any directory left empty by that removal —
+// never one that still holds something else (e.g. other exefs_patches).
 void certs_remove(void);
 
 #endif // SWITCHNET_CERTS_H

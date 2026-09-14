@@ -1,48 +1,15 @@
 #include "certs.h"
 #include "config.h"
 
+#include <dirent.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <switch.h>
 
-typedef struct {
-    const char *src;   // romfs:/...
-    const char *dst;   // sdmc:/...
-} CertFile;
-
-// Keep this list and its ordering (children before the parent directories
-// they live in) in sync with the rmdir cleanup below.
-static const CertFile CERT_FILES[] = {
-    { "romfs:/certs/switchnet_root_ca.pem", "sdmc:/switchnet/certs/switchnet_root_ca.pem" },
-    { "romfs:/certs/rootCA.pem",            "sdmc:/rootCA.pem" },
-    { "romfs:/certs/browser/RootCaEtc.pem",
-      "sdmc:/atmosphere/contents/0100000000000803/romfs/browser/RootCaEtc.pem" },
-    { "romfs:/certs/browser/RootCaSdkAdditional.pem",
-      "sdmc:/atmosphere/contents/0100000000000803/romfs/browser/RootCaSdkAdditional.pem" },
-};
-#define CERT_FILE_COUNT (sizeof(CERT_FILES) / sizeof(CERT_FILES[0]))
-
-// Directories to try to remove after the files above are gone, listed
-// deepest-first. rmdir() only succeeds on an empty directory, so anything the
-// user (or another homebrew) placed alongside these files is left untouched.
-static const char *const CERT_DIRS[] = {
-    "sdmc:/atmosphere/contents/0100000000000803/romfs/browser",
-    "sdmc:/atmosphere/contents/0100000000000803/romfs",
-    "sdmc:/atmosphere/contents/0100000000000803",
-    "sdmc:/switchnet/certs",
-};
-#define CERT_DIR_COUNT (sizeof(CERT_DIRS) / sizeof(CERT_DIRS[0]))
-
-static bool dirnameOf(const char *path, char *out, size_t outCap) {
-    const char *slash = strrchr(path, '/');
-    if (!slash) return false;
-    size_t len = (size_t)(slash - path);
-    if (len >= outCap) return false;
-    memcpy(out, path, len);
-    out[len] = '\0';
-    return true;
-}
+#define PROVISION_SRC_ROOT "romfs:/sd"
+#define PROVISION_DST_ROOT "sdmc:"
 
 static bool copyFile(const char *src, const char *dst) {
     FILE *in = fopen(src, "rb");
@@ -61,26 +28,65 @@ static bool copyFile(const char *src, const char *dst) {
     return ok;
 }
 
-bool certs_provision(void) {
-    bool allOk = true;
-    for (size_t i = 0; i < CERT_FILE_COUNT; i++) {
-        char dir[FS_MAX_PATH];
-        if (dirnameOf(CERT_FILES[i].dst, dir, sizeof(dir))) switchnet_ensure_dir(dir);
-        if (!copyFile(CERT_FILES[i].src, CERT_FILES[i].dst)) {
-            allOk = false;
-            char msg[300];
-            snprintf(msg, sizeof(msg), "certs: failed to install %s", CERT_FILES[i].dst);
-            switchnet_trace(msg);
+// Recursively mirrors srcDir (a romfs:/ path) into dstDir (an sdmc:/ path),
+// creating directories as needed and overwriting existing files.
+static bool copyTree(const char *srcDir, const char *dstDir) {
+    DIR *d = opendir(srcDir);
+    if (!d) return false;
+    bool ok = true;
+    struct dirent *e;
+    while ((e = readdir(d)) != NULL) {
+        if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, "..")) continue;
+        char sp[FS_MAX_PATH], dp[FS_MAX_PATH];
+        snprintf(sp, sizeof(sp), "%s/%s", srcDir, e->d_name);
+        snprintf(dp, sizeof(dp), "%s/%s", dstDir, e->d_name);
+        struct stat st;
+        if (stat(sp, &st) == 0 && S_ISDIR(st.st_mode)) {
+            if (!switchnet_ensure_dir(dp)) { ok = false; continue; }
+            if (!copyTree(sp, dp)) ok = false;
+        } else if (!copyFile(sp, dp)) {
+            ok = false;
         }
     }
+    closedir(d);
+    return ok;
+}
+
+// Mirror image of copyTree(): for every path that exists under srcDir,
+// removes the corresponding path under dstDir, then rmdir()s directories
+// left empty by that removal. rmdir() fails harmlessly on a non-empty
+// directory, so anything else sharing that directory (other exefs_patches,
+// other contents) is left alone.
+static void removeTree(const char *srcDir, const char *dstDir) {
+    DIR *d = opendir(srcDir);
+    if (!d) return;
+    struct dirent *e;
+    while ((e = readdir(d)) != NULL) {
+        if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, "..")) continue;
+        char sp[FS_MAX_PATH], dp[FS_MAX_PATH];
+        snprintf(sp, sizeof(sp), "%s/%s", srcDir, e->d_name);
+        snprintf(dp, sizeof(dp), "%s/%s", dstDir, e->d_name);
+        struct stat st;
+        if (stat(sp, &st) == 0 && S_ISDIR(st.st_mode)) {
+            removeTree(sp, dp);
+            rmdir(dp);
+        } else {
+            remove(dp);
+        }
+    }
+    closedir(d);
+}
+
+bool certs_provision(void) {
+    bool ok = copyTree(PROVISION_SRC_ROOT, PROVISION_DST_ROOT);
     fsdevCommitDevice("sdmc");
-    switchnet_trace(allOk ? "certs: provisioned (stub files)" : "certs: some files failed to provision");
-    return allOk;
+    switchnet_trace(ok ? "certs: provisioned (CA + CA-bypass patches)"
+                       : "certs: some files failed to provision");
+    return ok;
 }
 
 void certs_remove(void) {
-    for (size_t i = 0; i < CERT_FILE_COUNT; i++) remove(CERT_FILES[i].dst);
-    for (size_t i = 0; i < CERT_DIR_COUNT; i++) rmdir(CERT_DIRS[i]);
+    removeTree(PROVISION_SRC_ROOT, PROVISION_DST_ROOT);
     fsdevCommitDevice("sdmc");
     switchnet_trace("certs: removed");
 }

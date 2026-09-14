@@ -52,7 +52,7 @@ SwitchNet IP : 9.205.104.23
 | DNS-MITM on/off | `/atmosphere/config/system_settings.ini` |
 | Hosts backup | `sdmc:/switchnet/hosts_backup/` (mirrors the whole hosts folder) |
 | App settings (IP, flags) | `sdmc:/switchnet/config.cfg` |
-| Certificates | `sdmc:/rootCA.pem`, `sdmc:/switchnet/certs/`, and the console's browser CA bundle under `sdmc:/atmosphere/contents/0100000000000803/romfs/browser/` |
+| Certificates & CA-bypass patches | `romfs/sd/` mirrored onto the SD card root — `rootCA.pem`, the browser CA bundle, and the `exefs_patches`/`nro_patches` below |
 | Debug trace | `sdmc:/switchnet/trace.txt` |
 
 Because it only writes files Atmosphère (and the console's browser applet)
@@ -66,23 +66,31 @@ telemetry in both modes. It does not contain per-game server IDs or bundled
 mods — extend `source/hosts.c` (`hosts_build`) as SwitchNet's own
 infrastructure grows.
 
-## Certificates
+## Certificates & certificate trust
 
-This app installs SwitchNet's actual root CA certificate (`CN=SwitchNet
-Local CA`, embedded at build time) at the paths a working install needs:
+`romfs/sd/` is a mirror of the SD card root: everything under it gets copied
+onto the SD card, at the same relative path, when SwitchNet mode is applied
+(and removed again in Default mode). It currently contains:
 
-- `romfs/certs/switchnet_root_ca.pem` → `sdmc:/switchnet/certs/switchnet_root_ca.pem`
-- `romfs/certs/rootCA.pem` → `sdmc:/rootCA.pem`
-- `romfs/certs/browser/RootCaEtc.pem` / `RootCaSdkAdditional.pem` → the
-  console's browser-applet CA bundle, for WebView-based account linking
+- **SwitchNet's actual root CA** (`CN=SwitchNet Local CA`, embedded at build
+  time) at `switchnet/certs/switchnet_root_ca.pem`, `rootCA.pem`, and the
+  console's browser-applet CA bundle under
+  `atmosphere/contents/0100000000000803/romfs/browser/`.
+- **`disable_ca_verification`** (`atmosphere/exefs_patches/`) and
+  **`disable_browser_ca_verification`** (`atmosphere/nro_patches/`) — the
+  public per-firmware-build-ID IPS patches from
+  [misson20000/exefs_patches](https://github.com/misson20000/exefs_patches)
+  that make the system SSL service and the browser applet accept a
+  self-signed certificate. **Installing the CA alone is not enough** — the
+  browser and system SSL service still enforce the stock CA check without
+  these, which is what error **2123-0308** (browser fails to open during
+  account linking) generally means. Atmosphère only applies the patch whose
+  filename matches the running firmware's build ID, so shipping patches for
+  every supported firmware is harmless.
 
-To rotate the certificate later: replace the four files under
-`romfs/certs/` with the new PEM-encoded root CA, bump `APP_VERSION`, and push
-to `main` — CI builds and releases it, and existing installs pick it up
-through the in-app updater. Note that getting a *game's own* SSL stack (as
-opposed to the browser/WebView) to accept this CA typically also requires
-firmware-build-specific ExeFS/NRO IPS patches to skip certificate
-verification; those are a separate piece of work and aren't included here.
+To rotate the certificate later: replace the PEM files under `romfs/sd/`
+with the new root CA, bump `APP_VERSION`, and push to `main` — CI builds and
+releases it, and existing installs pick it up through the in-app updater.
 
 ## Building
 
