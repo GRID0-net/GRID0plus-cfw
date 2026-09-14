@@ -134,6 +134,13 @@ static int sendHttpGet(SslConnection *sslConn, const char *host, const char *pat
                       "User-Agent: SwitchNetToolbox\r\n"
                       "Accept: */*\r\nConnection: close\r\n\r\n",
                       path, host);
+    // snprintf returns the length the request WOULD have needed, which can
+    // exceed sizeof(req) -- req itself is truncated but still NUL-terminated
+    // within bounds. Passing that larger rl to sslConnectionWrite would read
+    // past req's end. Neither host nor path is normally anywhere near this
+    // long, but nothing upstream guarantees it, so refuse rather than read
+    // out of bounds.
+    if (rl < 0 || (size_t)rl >= sizeof(req)) return -1;
     uint32_t written = 0;
     Result rc = sslConnectionWrite(sslConn, req, rl, &written);
     if (R_FAILED(rc) || written != (uint32_t)rl) return -1;
