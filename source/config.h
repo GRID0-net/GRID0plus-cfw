@@ -16,6 +16,14 @@
 // Currently selected server IP (default, or the override once loaded).
 extern char g_server_ip[SWITCHNET_SERVER_IP_MAX];
 
+// SwitchNet's own toolbox API (server status, update checks) is reached by
+// IP on this fixed port — never by a redirected Nintendo hostname, and
+// never DNS-resolved: it is the same g_server_ip the hosts file points
+// games at, just a different port on the nginx edge (see
+// deploy/nginx.toolbox.conf in the switchnet repo, the same pattern
+// gamesync uses for port 7575 instead of a slot in the SNI map).
+#define SWITCHNET_TOOLBOX_PORT 8443
+
 #define SWITCHNET_DIR           "sdmc:/switchnet"
 #define SWITCHNET_CONFIG_FILE   SWITCHNET_DIR "/config.cfg"
 #define SWITCHNET_TRACE_PATH    SWITCHNET_DIR "/trace.txt"

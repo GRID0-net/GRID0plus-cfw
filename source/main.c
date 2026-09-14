@@ -10,6 +10,7 @@
 //   Back up hosts folder now
 //   Restore backup on Default mode: ON/OFF
 //   Check for updates
+//   Server status
 //   Exit
 //
 // Switching modes writes Atmosphère's DNS-MITM hosts files and reboots (the
@@ -24,6 +25,7 @@
 #include "certs.h"
 #include "config.h"
 #include "hosts.h"
+#include "status.h"
 #include "update.h"
 #include "version.h"
 
@@ -35,6 +37,7 @@ enum {
     MENU_BACKUP_NOW,
     MENU_TOGGLE_RESTORE,
     MENU_CHECK_UPDATE,
+    MENU_SERVER_STATUS,
     MENU_EXIT,
     MENU_COUNT,
 };
@@ -51,6 +54,7 @@ static const char *menuLabel(int i, char *buf, size_t cap) {
                      config_get_restore_on_default() ? "ON" : "OFF");
             return buf;
         case MENU_CHECK_UPDATE:    return "Check for updates";
+        case MENU_SERVER_STATUS:   return "Server status";
         case MENU_EXIT:            return "Exit";
         default:                   return "";
     }
@@ -196,6 +200,44 @@ static void runUpdateFlow(PadState *pad) {
     }
 }
 
+// Blocking status listing. Its own small loop rather than messageScreen:
+// the body is a variable number of rows, not one fixed string.
+static void runServerStatusFlow(PadState *pad) {
+    consoleClear();
+    drawHeader();
+    printf("Checking server status...\n");
+    consoleUpdate(NULL);
+
+    StatusRow rows[STATUS_MAX_SERVICES];
+    int count = 0;
+    StatusFetchResult res = status_fetch(rows, &count);
+
+    while (appletMainLoop()) {
+        padUpdate(pad);
+        u64 k = padGetButtonsDown(pad);
+
+        consoleClear();
+        drawHeader();
+        printf("Server status\n\n");
+        if (res != STATUS_FETCH_OK) {
+            printf("Could not reach %s:%d. Check the IP and that SwitchNet is running.\n",
+                   g_server_ip, SWITCHNET_TOOLBOX_PORT);
+        } else if (count == 0) {
+            printf("SwitchNet answered, but reported no services.\n");
+        } else {
+            for (int i = 0; i < count; i++) {
+                printf("  %-12s %s%s%s\n", rows[i].name, rows[i].status,
+                       rows[i].reason[0] ? " - " : "", rows[i].reason);
+            }
+        }
+        printf("\n(A/B/+) Continue\n");
+        consoleUpdate(NULL);
+
+        if (k & (HidNpadButton_A | HidNpadButton_B | HidNpadButton_Plus)) return;
+        svcSleepThread(16000000ULL);
+    }
+}
+
 int main(int argc, char **argv) {
     // hbmenu passes the running .nro's real path in argv[0] — the updater
     // needs it to replace the correct file (not just a fixed default path).
@@ -301,6 +343,9 @@ int main(int argc, char **argv) {
                     break;
                 case MENU_CHECK_UPDATE:
                     runUpdateFlow(&pad);
+                    break;
+                case MENU_SERVER_STATUS:
+                    runServerStatusFlow(&pad);
                     break;
                 case MENU_EXIT:
                     goto done;

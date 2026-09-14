@@ -65,15 +65,15 @@ static int parseStatusLine(const unsigned char *buf, size_t len) {
     return NET_ERR_PROTO;
 }
 
-// Opens a TLS connection to host:443 and completes the handshake. On success
-// fills *sslCtx/*sslConn/*rawFd/*sslFd; on failure everything is cleaned up
-// and false is returned.
-static bool sslConnect(const char *host, SslContext *sslCtx, SslConnection *sslConn,
+// Opens a TLS connection to host:port and completes the handshake. On
+// success fills *sslCtx/*sslConn/*rawFd/*sslFd; on failure everything is
+// cleaned up and false is returned.
+static bool sslConnect(const char *host, int port, SslContext *sslCtx, SslConnection *sslConn,
                         int *rawFd, int *sslFd) {
     const char *ip = resolveHost(host);
     if (!ip) return false;
 
-    int fd = tcpConnect(ip, 443);
+    int fd = tcpConnect(ip, port);
     if (fd < 0) return false;
 
     if (R_FAILED(sslCreateContext(sslCtx, SslVersion_Auto))) { close(fd); return false; }
@@ -93,10 +93,11 @@ static bool sslConnect(const char *host, SslContext *sslCtx, SslConnection *sslC
 
     bool ok = R_SUCCEEDED(sslConnectionSetHostName(sslConn, host, strlen(host)));
 
-    // The system trust store won't know a private server's CA, and this
-    // client only ever talks to GitHub over TLS anyway; the payload itself
-    // (a signed release asset) is still verified by size against what the
-    // GitHub API reported.
+    // The system trust store knows neither GitHub's CA chain (this build's
+    // firmware-side trust patches, if installed at all, only cover the
+    // SwitchNet CA) nor SwitchNet's own self-issued edge certificate, so
+    // verification is skipped for both. A release download's integrity is
+    // still checked by size against what /updates/latest reported.
     if (ok) sslConnectionSetOption(sslConn, SslOptionType_SkipDefaultVerify, true);
 
     // Force HTTP/1.1: this client only speaks HTTP/1.1 request framing, and
@@ -139,14 +140,14 @@ static int sendHttpGet(SslConnection *sslConn, const char *host, const char *pat
     return 0;
 }
 
-unsigned char *net_https_get(const char *host, const char *path, size_t *out_len, int *out_status) {
+unsigned char *net_https_get(const char *host, int port, const char *path, size_t *out_len, int *out_status) {
     *out_len = 0;
     *out_status = NET_ERR_UNKNOWN;
 
     SslContext sslCtx;
     SslConnection sslConn;
     int rawFd = -1, sslFd = -1;
-    if (!sslConnect(host, &sslCtx, &sslConn, &rawFd, &sslFd)) {
+    if (!sslConnect(host, port, &sslCtx, &sslConn, &rawFd, &sslFd)) {
         *out_status = NET_ERR_TLS;
         return NULL;
     }
@@ -219,11 +220,26 @@ static void extractLocationHeader(const unsigned char *hdr, size_t hlen, char *o
     }
 }
 
-long net_https_get_to_file(const char *host, const char *path, FILE *out,
+// Splits "host" or "host:port" into a bare host and a port, defaulting to
+// `defaultPort` when the input carries none. Used only for a redirect's
+// Location header, which may or may not name an explicit port.
+static void splitHostPort(const char *hostport, char *hostOut, size_t hostCap,
+                           int defaultPort, int *portOut) {
+    const char *colon = strrchr(hostport, ':');
+    size_t hostLen = colon ? (size_t)(colon - hostport) : strlen(hostport);
+    if (hostLen >= hostCap) hostLen = hostCap - 1;
+    memcpy(hostOut, hostport, hostLen);
+    hostOut[hostLen] = '\0';
+    *portOut = colon ? atoi(colon + 1) : defaultPort;
+    if (*portOut <= 0) *portOut = defaultPort;
+}
+
+long net_https_get_to_file(const char *host, int port, const char *path, FILE *out,
                             int *out_status, net_progress_fn onProgress) {
     *out_status = 0;
 
     char curHost[256], curPath[2048];
+    int curPort = port;
     strncpy(curHost, host, sizeof(curHost) - 1); curHost[sizeof(curHost) - 1] = '\0';
     strncpy(curPath, path, sizeof(curPath) - 1); curPath[sizeof(curPath) - 1] = '\0';
 
@@ -231,7 +247,7 @@ long net_https_get_to_file(const char *host, const char *path, FILE *out,
         SslContext sslCtx;
         SslConnection sslConn;
         int rawFd = -1, sslFd = -1;
-        if (!sslConnect(curHost, &sslCtx, &sslConn, &rawFd, &sslFd)) { *out_status = NET_ERR_TLS; return -1; }
+        if (!sslConnect(curHost, curPort, &sslCtx, &sslConn, &rawFd, &sslFd)) { *out_status = NET_ERR_TLS; return -1; }
 
         if (sendHttpGet(&sslConn, curHost, curPath) < 0) {
             sslDisconnect(&sslConn, &sslCtx, sslFd);
@@ -309,9 +325,9 @@ long net_https_get_to_file(const char *host, const char *path, FILE *out,
         *out_status = status;
 
         if (isRedirect && attempt == 0 && location[0]) {
-            char newHost[256] = {0}, newPath[2048] = {0};
-            if (sscanf(location, "https://%255[^/]%2047s", newHost, newPath) < 2) return -1;
-            strncpy(curHost, newHost, sizeof(curHost) - 1); curHost[sizeof(curHost) - 1] = '\0';
+            char hostPort[256] = {0}, newPath[2048] = {0};
+            if (sscanf(location, "https://%255[^/]%2047s", hostPort, newPath) < 2) return -1;
+            splitHostPort(hostPort, curHost, sizeof(curHost), 443, &curPort);
             strncpy(curPath, newPath, sizeof(curPath) - 1); curPath[sizeof(curPath) - 1] = '\0';
             rewind(out);
             ftruncate(fileno(out), 0);

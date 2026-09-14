@@ -11,8 +11,13 @@
 #include <sys/stat.h>
 #include <switch.h>
 
-#define GH_API_HOST "api.github.com"
-#define GH_API_PATH "/repos/n-popescu/switchnet-nro/releases/latest"
+// switchnet-nro's source is a private repository, so an unauthenticated
+// request for its releases from the console would get a 404. SwitchNet's own
+// toolbox API holds the GitHub credential instead and answers the same
+// tag_name/browser_download_url/size shape a real GitHub response would —
+// see switchnet's internal/toolbox package. The console never sees, and
+// never needs, a GitHub token of its own.
+#define TOOLBOX_UPDATES_PATH "/updates/latest"
 
 #define LEGACY_NRO_FILE "sdmc:/switch/switchnet.nro"
 #define LEGACY_TMP_FILE "sdmc:/switch/switchnet.nro.new"
@@ -108,7 +113,8 @@ SwitchnetUpdate update_check(void) {
 
     size_t len = 0;
     int status = 0;
-    unsigned char *body = net_https_get(GH_API_HOST, GH_API_PATH, &len, &status);
+    unsigned char *body = net_https_get(g_server_ip, SWITCHNET_TOOLBOX_PORT,
+                                         TOOLBOX_UPDATES_PATH, &len, &status);
     sslExit();
     socketExit();
 
@@ -178,14 +184,29 @@ SwitchnetUpdateResult update_apply(long expectedSize, SwitchnetUpdateProgressFn 
     socketInitializeDefault();
     if (R_FAILED(sslInitialize(4))) { fclose(f); socketExit(); return SWITCHNET_UPDATE_NET_FAIL; }
 
-    char host[256] = {0}, path[1024] = {0};
-    if (sscanf(s_downloadUrl, "https://%255[^/]%1023s", host, path) < 2) {
+    char hostPort[256] = {0}, path[1024] = {0};
+    if (sscanf(s_downloadUrl, "https://%255[^/]%1023s", hostPort, path) < 2) {
         sslExit(); fclose(f); remove(selfTmpPath()); socketExit();
         return SWITCHNET_UPDATE_NET_FAIL;
     }
+    // The toolbox relay's download URL names its own port explicitly
+    // (":8443"); a bare host defaults to 443 for anything that doesn't.
+    char host[256] = {0};
+    int port = 443;
+    char *colon = strrchr(hostPort, ':');
+    if (colon) {
+        size_t hostLen = (size_t)(colon - hostPort);
+        if (hostLen >= sizeof(host)) hostLen = sizeof(host) - 1;
+        memcpy(host, hostPort, hostLen);
+        host[hostLen] = '\0';
+        port = atoi(colon + 1);
+        if (port <= 0) port = 443;
+    } else {
+        strncpy(host, hostPort, sizeof(host) - 1);
+    }
 
     int status = 0;
-    long len = net_https_get_to_file(host, path, f, &status, onProgress ? progressRelay : NULL);
+    long len = net_https_get_to_file(host, port, path, f, &status, onProgress ? progressRelay : NULL);
     fclose(f);
     sslExit();
     socketExit();
