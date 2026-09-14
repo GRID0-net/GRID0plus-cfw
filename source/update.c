@@ -202,7 +202,7 @@ SwitchnetUpdateResult update_apply(long expectedSize, SwitchnetUpdateProgressFn 
         port = atoi(colon + 1);
         if (port <= 0) port = 443;
     } else {
-        strncpy(host, hostPort, sizeof(host) - 1);
+        snprintf(host, sizeof(host), "%s", hostPort);
     }
 
     int status = 0;
