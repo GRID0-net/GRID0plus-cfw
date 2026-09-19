@@ -239,6 +239,15 @@ static void runServerStatusFlow(PadState *pad) {
     }
 }
 
+// See the dns_mitm warmup comment in main() for why this runs off-thread.
+static Thread s_dnsWarmupThread;
+static bool   s_dnsWarmupThreadOn = false;
+
+static void dnsWarmupWorker(void *arg) {
+    (void)arg;
+    net_dns_warmup("accounts.nintendo.com");
+}
+
 int main(int argc, char **argv) {
     // hbmenu passes the running .nro's real path in argv[0] — the updater
     // needs it to replace the correct file (not just a fixed default path).
@@ -259,10 +268,26 @@ int main(int argc, char **argv) {
     // files, which throws away whatever it just warmed. So: if SwitchNet mode
     // is already active on THIS boot (i.e. we're not the one switching into
     // it right now), warm dns_mitm up ourselves, once, before the user can
-    // reach anything that depends on it. One blocking DNS query, same
-    // approach Nextendo's own Prelude uses for the identical race.
+    // reach anything that depends on it.
+    //
+    // Off the main thread, on purpose, matching Prelude's own bootWorker for
+    // the identical race: socketInitializeDefault()+gethostbyname() can take
+    // several real seconds (their comment says so directly), and doing that
+    // inline here would leave the menu frozen and unselectable for however
+    // long DNS takes -- indistinguishable, from the outside, from the app
+    // just not working. threadCreate's stack size and priority are copied
+    // from Prelude's own bootWorker rather than guessed: this is the same
+    // operation, so there is no reason to pick different numbers. If even
+    // starting the thread fails, fall back to running it inline rather than
+    // silently skipping the warmup.
     if (apply_current_mode() == SWITCHNET_MODE_SWITCHNET) {
-        net_dns_warmup("accounts.nintendo.com");
+        if (R_SUCCEEDED(threadCreate(&s_dnsWarmupThread, dnsWarmupWorker, NULL, NULL,
+                                      0x20000, 0x2C, -2))
+            && R_SUCCEEDED(threadStart(&s_dnsWarmupThread))) {
+            s_dnsWarmupThreadOn = true;
+        } else {
+            dnsWarmupWorker(NULL);
+        }
     }
 
     padConfigureInput(1, HidNpadStyleSet_NpadStandard);
@@ -373,6 +398,10 @@ int main(int argc, char **argv) {
     }
 
 done:
+    if (s_dnsWarmupThreadOn) {
+        threadWaitForExit(&s_dnsWarmupThread);
+        threadClose(&s_dnsWarmupThread);
+    }
     romfsExit();
     consoleExit(NULL);
     return 0;
