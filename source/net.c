@@ -22,6 +22,13 @@ static const char *resolveHost(const char *host) {
     return inet_ntoa(*(struct in_addr *)he->h_addr_list[0]);
 }
 
+bool net_dns_warmup(const char *host) {
+    if (R_FAILED(socketInitializeDefault())) return false;
+    bool ok = resolveHost(host) != NULL;
+    socketExit();
+    return ok;
+}
+
 static int tcpConnect(const char *ip, int port) {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) return -1;

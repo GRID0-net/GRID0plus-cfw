@@ -35,4 +35,15 @@ typedef void (*net_progress_fn)(long received, long total);
 long net_https_get_to_file(const char *host, int port, const char *path, FILE *out,
                             int *out_status, net_progress_fn onProgress);
 
+// Forces Atmosphère's dns_mitm to load the hosts file it just wrote, by
+// making one real DNS query through it. dns_mitm reads hosts/*.txt lazily,
+// on its first intercepted query after boot -- not when the file changes on
+// disk -- so nnAccount's own later lookup of accounts.nintendo.com can lose
+// a race against that first-load if nothing has queried DNS yet this boot.
+// Self-contained: brings sockets up and down itself, like net_https_get's
+// callers do. Returns false on any failure; callers should log but not
+// treat it as fatal, since the account link may still work if the race
+// happens to resolve in the console's favour anyway.
+bool net_dns_warmup(const char *host);
+
 #endif // SWITCHNET_NET_H

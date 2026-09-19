@@ -25,6 +25,7 @@
 #include "certs.h"
 #include "config.h"
 #include "hosts.h"
+#include "net.h"
 #include "status.h"
 #include "update.h"
 #include "version.h"
@@ -247,6 +248,22 @@ int main(int argc, char **argv) {
 
     consoleInit(NULL);
     romfsInit();   // keeps the cert stub files in romfs:/certs/ available
+
+    // Atmosphere's dns_mitm reads hosts/*.txt lazily, on its first intercepted
+    // DNS query after boot -- not when the file changes on disk, and this
+    // state does not survive a reboot. If nothing has queried DNS yet this
+    // boot, the system's own account-linking screen resolving
+    // accounts.nintendo.com can lose that race and fail, silently, with
+    // nothing in the applet to say why. This is exactly why apply_switchnet()
+    // itself can't do the warmup: it reboots right after writing the hosts
+    // files, which throws away whatever it just warmed. So: if SwitchNet mode
+    // is already active on THIS boot (i.e. we're not the one switching into
+    // it right now), warm dns_mitm up ourselves, once, before the user can
+    // reach anything that depends on it. One blocking DNS query, same
+    // approach Nextendo's own Prelude uses for the identical race.
+    if (apply_current_mode() == SWITCHNET_MODE_SWITCHNET) {
+        net_dns_warmup("accounts.nintendo.com");
+    }
 
     padConfigureInput(1, HidNpadStyleSet_NpadStandard);
     PadState pad;
