@@ -6,7 +6,7 @@ hosts configuration — the same mechanism used by network-switcher homebrew
 like Prelude, without any bundled game mods.
 
 ```
-SwitchNet Toolbox  beta-0.3.0
+SwitchNet Toolbox  <VERSION>
 ========================================
 
 Current mode : DEFAULT
