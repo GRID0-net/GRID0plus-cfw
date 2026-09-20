@@ -101,6 +101,18 @@ To rotate the certificate later: replace the PEM files under `romfs/sd/`
 with the new root CA, bump `APP_VERSION`, and push to `main` — CI builds and
 releases it, and existing installs pick it up through the in-app updater.
 
+**Known gap: game-specific TLS pinning.** The two patches above cover the
+system SSL service and the browser applet, not a game's own executable.
+Splatoon 3 (and reportedly Mario Wonder / Mario Party Jamboree) does part
+of its TLS verification inside its own binary and needs its own patch to
+reach a private server, which `switchnet-nro` does not currently provision.
+See [`docs/game-specific-tls-pinning.md`](docs/game-specific-tls-pinning.md)
+for what a decompile of the operator's own Splatoon 3 dump found (exact
+function addresses, the three-layer verification architecture, and why
+this needed independent research rather than reusing another project's
+patches) and the real account-ban risk involved before building or
+installing anything from it.
+
 ## Updates & server status
 
 This repository is **private**. GitHub's API answers an unauthenticated
