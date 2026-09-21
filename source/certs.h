@@ -31,6 +31,15 @@ bool certs_provision(void);
 // Removes every file certs_provision() would install (by walking the same
 // romfs:/sd/ tree), and prunes any directory left empty by that removal —
 // never one that still holds something else (e.g. other exefs_patches).
+//
+// Also unconditionally removes a fixed, append-only list of every path a
+// PAST released version is known to have written (see certs.c), even if the
+// currently-running build's own romfs:/sd/ tree no longer mentions that
+// path. Without this, someone who installed an old build, then later
+// updated the .nro itself without ever running "Switch to Default" first,
+// could accumulate files a newer build's tree-mirror can no longer see to
+// clean up — orphaned, not wrong-content (copyFile always overwrites
+// same-path files), but still SwitchNet's to remove.
 void certs_remove(void);
 
 #endif // SWITCHNET_CERTS_H
