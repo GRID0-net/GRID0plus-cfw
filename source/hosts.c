@@ -95,8 +95,8 @@ char *hosts_build(const char *ip) {
     // authoritative list this repo's README says to extend from.
     sb_append(&sb, "\n# --- System updates -> null-routed: this emuMMC never talks to\n");
     sb_append(&sb, "# real Nintendo, so passthrough would only leak real update traffic.\n");
-    sb_append(&sb, "# NOTE: atumn (system update), not atum (phase-3 game content) --\n");
-    sb_append(&sb, "# one-letter difference, same d4c domain. See switchnet's CLAUDE.md.\n");
+    sb_append(&sb, "# NOTE: atumn (system update), not atum (phase-3 game content, listed\n");
+    sb_append(&sb, "# separately below) -- one-letter difference, same d4c domain.\n");
     sb_append(&sb, "0.0.0.0          sun.hac.lp1.d4c.nintendo.net\n");
     sb_append(&sb, "0.0.0.0          atumn.hac.lp1.d4c.nintendo.net\n");
     sb_append(&sb, "0.0.0.0          aqua.hac.lp1.d4c.nintendo.net\n");
@@ -108,6 +108,19 @@ char *hosts_build(const char *ip) {
     sb_append(&sb, "0.0.0.0          bcat-list-lp1.cdn.nintendo.net\n");
     sb_append(&sb, "0.0.0.0          bcat-data-lp1.cdn.nintendo.net\n");
     sb_append(&sb, "0.0.0.0          bcat-topics-lp1.cdn.nintendo.net\n");
+
+    // Phase 3 (eShop) hosts, not built on this server -- same reasoning as the
+    // d4c/BCAT groups above, so null-routed rather than left to fall through.
+    // hac.lp1.savanna.srv.nintendo.net and cdn.accounts.nintendo.com are
+    // deliberately NOT listed here: both already match *.srv.nintendo.net /
+    // *.nintendo.com above and go to SwitchNet, not real Nintendo.
+    sb_append(&sb, "\n# --- eShop (not built) -> null-routed ---\n");
+    sb_append(&sb, "0.0.0.0          atum.hac.lp1.d4c.nintendo.net\n");
+    sb_append(&sb, "0.0.0.0          bugyo.hac.lp1.eshop.nintendo.net\n");
+    sb_append(&sb, "0.0.0.0          tagaya.hac.lp1.eshop.nintendo.net\n");
+    sb_append(&sb, "0.0.0.0          ecs-lp1.hac.shop.nintendo.net\n");
+    sb_append(&sb, "0.0.0.0          ias-lp1.hac.shop.nintendo.net\n");
+    sb_append(&sb, "0.0.0.0          idbe-hac.cdn.nintendo.net\n");
 
     sb_append(&sb, "\n# --- Browser connectivity check -> SwitchNet ---\n");
     sb_appendf(&sb, "%s conntest.nintendowifi.net\n", ip);
