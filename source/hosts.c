@@ -83,6 +83,24 @@ char *hosts_build(const char *ip) {
     // Covers every game's NEX secure server without hardcoding per-game IDs.
     sb_appendf(&sb, "%s g2*.s.n.srv.nintendo.net\n", ip);
 
+    // These seven are all real, active SwitchNet endpoints (friend
+    // recommendations, invitations, NSO membership, eLicense, eShop's
+    // pre-account-link host, service status, and the Splatoon 3 lobby host on
+    // port 7575) but none of them are on .nintendo.com or .srv.nintendo.net,
+    // so none match the wildcards above -- without an explicit line each one
+    // falls straight through DNS-MITM to real Nintendo instead of the
+    // SwitchNet server that actually answers it. Cross-checked host by host
+    // against switchnet's own internal/nintendo/hosts.go, not assumed from
+    // the pattern above.
+    sb_append(&sb, "\n# --- More SwitchNet endpoints, not on a wildcard above ---\n");
+    sb_appendf(&sb, "%s app.lp1.five.nintendo.net\n", ip);
+    sb_appendf(&sb, "%s capi.lp1.op2.nintendo.net\n", ip);
+    sb_appendf(&sb, "%s dragons.hac.lp1.dragons.nintendo.net\n", ip);
+    sb_appendf(&sb, "%s pubkey.lp1.dragons.nintendo.net\n", ip);
+    sb_appendf(&sb, "%s beach.hac.lp1.eshop.nintendo.net\n", ip);
+    sb_appendf(&sb, "%s service-status-lp1.cdn.nintendo.net\n", ip);
+    sb_appendf(&sb, "%s gamesync.npln.nintendo.net\n", ip);
+
     sb_append(&sb, "\n# --- Telemetry -> null-routed (kept off in both modes) ---\n");
     sb_append(&sb, "0.0.0.0          receive-%.dg.srv.nintendo.net\n");
     sb_append(&sb, "0.0.0.0          receive-%.er.srv.nintendo.net\n");
