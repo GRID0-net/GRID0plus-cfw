@@ -87,6 +87,28 @@ char *hosts_build(const char *ip) {
     sb_append(&sb, "0.0.0.0          receive-%.dg.srv.nintendo.net\n");
     sb_append(&sb, "0.0.0.0          receive-%.er.srv.nintendo.net\n");
 
+    // None of the hosts below match the broad *.nintendo.com / *.srv.nintendo.net
+    // patterns above (they're on .nintendo.net or .cdn.nintendo.net directly), so
+    // without an explicit line here they fall straight through DNS-MITM to real
+    // upstream DNS -- reaching real Nintendo, not just "unhandled". Matches
+    // switchnet's own internal/nintendo/hosts.go (ServiceBlackhole), the
+    // authoritative list this repo's README says to extend from.
+    sb_append(&sb, "\n# --- System updates -> null-routed: this emuMMC never talks to\n");
+    sb_append(&sb, "# real Nintendo, so passthrough would only leak real update traffic.\n");
+    sb_append(&sb, "# NOTE: atumn (system update), not atum (phase-3 game content) --\n");
+    sb_append(&sb, "# one-letter difference, same d4c domain. See switchnet's CLAUDE.md.\n");
+    sb_append(&sb, "0.0.0.0          sun.hac.lp1.d4c.nintendo.net\n");
+    sb_append(&sb, "0.0.0.0          atumn.hac.lp1.d4c.nintendo.net\n");
+    sb_append(&sb, "0.0.0.0          aqua.hac.lp1.d4c.nintendo.net\n");
+
+    // Observed on real hardware reaching a real Nintendo IP when left off this
+    // list entirely (switchnet's own 2026-08-26 capture, same failure mode as
+    // the d4c hosts above): background content delivery, not needed yet.
+    sb_append(&sb, "\n# --- BCAT background content delivery -> null-routed ---\n");
+    sb_append(&sb, "0.0.0.0          bcat-list-lp1.cdn.nintendo.net\n");
+    sb_append(&sb, "0.0.0.0          bcat-data-lp1.cdn.nintendo.net\n");
+    sb_append(&sb, "0.0.0.0          bcat-topics-lp1.cdn.nintendo.net\n");
+
     sb_append(&sb, "\n# --- Browser connectivity check -> SwitchNet ---\n");
     sb_appendf(&sb, "%s conntest.nintendowifi.net\n", ip);
     sb_appendf(&sb, "%s ctest.cdn.nintendo.net\n", ip);
