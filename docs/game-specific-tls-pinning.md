@@ -167,6 +167,32 @@ verified the same way — `capstone` disassembly of the original bytes
 matches Ghidra exactly, and `keystone` assembly of the intended
 replacement instruction matches the patch bytes exactly.
 
+## Correction (v0.4.5): the v0.4.0–v0.4.4 files never patched these addresses
+
+The RVAs above are right; the `.ips` files were not. Atmosphère's loader
+subtracts the 0x100-byte NSO header from every IPS record offset before
+writing (`libstratosphere/source/patcher/patcher_api.cpp`,
+`patch_offset -= offset` with `offset = sizeof(NsoHeader)`), so a record
+must say **RVA + 0x100**. The hand-made files said the bare RVA, which
+Atmosphère applied 0x100 bytes early:
+
+| Patch | Meant for | What the old file actually overwrote |
+| --- | --- | --- |
+| `s3verifyoption_bypass` | `0x6E2C54` `csel w1, w10, w11, eq` | `0x6E2B54` `ldr x0, [x23, #0xa98]` |
+| `s3certpin_bypass` | `0x6E1F48`, `Curl_pin_peer_pubkey`'s first two instructions | `0x6E1E48`, the middle of a different function's prologue |
+
+The symptom on hardware (2026-09-23, Splatoon 3 v11.3.0, error 2321-4992
+entering the lobby): a tcpdump showed the TLS 1.2 handshake to
+`t-dce9377b-lp1.lp1.t.npln.srv.nintendo.net` stop right after the server's
+certificate — the console closes without a ClientKeyExchange — because
+`VerifyOption` was never zeroed and the game's own context (it calls
+`nn::ssl::Context::ImportServerPki` with its own CA set) rejected the
+SwitchNet CA. This routine is the game's only `nnsslConnectionSetVerifyOption`
+call site (`0x6E2C58`), so the NPLN gRPC channel goes through it too.
+
+`tools/make_exefs_ips.py` now builds both files from the RVA and adds the
+header itself; `28C4287A…` records are `0x6E2D54` and `0x6E2048`.
+
 ## Status: both patches built, neither tested on real hardware
 
 Whether one, both, or neither is sufficient to reach a SwitchNet server
