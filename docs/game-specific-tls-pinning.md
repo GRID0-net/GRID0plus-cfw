@@ -221,7 +221,29 @@ built with `tools/make_exefs_ips.py`. Its output for the same `main`
 (`IPS32` record at `0x157B20`) agrees with ours byte for byte, and it also
 adds `0x100` to the offset — an independent confirmation of the v0.4.5 fix.
 
-## Status: three patches built, the first two untested, the third new
+## The fourth check: gRPC's peer verification (`s3grpcpeer_bypass`)
+
+`s3grpcverify_bypass` only chooses which verify callback the gRPC channel
+installs. The result of that callback, and gRPC's own host-name check, are
+two further gates, both in our v11.3.0 dump next to their error strings:
+
+| RVA | What it is | Change |
+| --- | --- | --- |
+| `0x14DC80` | after `blr x9` (the verify-peer callback), `mov w20, w0` keeps its result; non-zero leads to *"Verify peer callback returned a failure (%d)"* | `mov w20, wzr` (`f4 03 1f 2a`) |
+| `0x14E0B0` | after `bl 0x14E350` (host vs. certificate), `cbz w0` branches to *"Peer name %s is not in peer certificate"* | `nop` (`1f 20 03 d5`) |
+
+The callback runs inside the TLS handshake, which is why its failure looked
+like the console hanging up right after the server's certificate (nginx:
+"peer closed connection in SSL handshake"), with 2321-4992 on screen.
+
+How these were found: by reading Nextendo's `s3peername` patch for this
+build (their Prelude-Nro, PolyForm Shield) to learn *where* they intervene,
+then confirming what each location is from our own decompile. Their files
+are not copied; ours are built with `tools/make_exefs_ips.py`. Their
+`s3certbypass` for this build is the same single change as our
+`s3grpcverify_bypass`.
+
+## Status: four patches built, none confirmed on hardware yet
 
 Whether one, both, or neither is sufficient to reach a SwitchNet server
 from Splatoon 3 is genuinely unknown until someone actually launches the
