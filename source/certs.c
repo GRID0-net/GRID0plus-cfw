@@ -154,7 +154,53 @@ static void purgeLegacyOwnedPaths(void) {
     rmdir("sdmc:/atmosphere/contents/0100000000000803");
 }
 
+// exefs_patches and nro_patches leaves are named by opaque per-firmware
+// build-ID hash, not by a fixed filename copyTree's overwrite-in-place can
+// keep in sync. If a later SwitchNet release ships a SMALLER set for a patch
+// name -- dropping a build id, or picking up a corrected upstream file under
+// the same name as an old broken one -- copyTree alone leaves every
+// previously-written file sitting there untouched, because nothing removes
+// what the current romfs no longer mentions. That is exactly what this
+// project measured causing 2123-0308 on a real console: the old on-SD
+// disable_ca_verification carried an incomplete build-id set for its
+// firmware, and copyTree's own "only ever gains files" behaviour meant
+// simply reapplying a newer SwitchNet build could never fix it by itself.
+//
+// So before copyTree runs, every patch-name directory the CURRENT romfs
+// ships under exefs_patches/ or nro_patches/ is deleted wholesale from the
+// SD first -- read from the romfs itself, not a hardcoded list, so this
+// stays in sync automatically as patch names are added or removed. Only
+// entries copyTree is about to fully repopulate are touched; anything else
+// sharing exefs_patches/nro_patches (other homebrew's own patches) is left
+// alone, the same reasoning purgeLegacyOwnedPaths above already applies to
+// LEGACY_OWNED_DIRS.
+static void cleanProvisionedPatchDirs(void) {
+    static const char *const GROUPS[] = {
+        "atmosphere/exefs_patches",
+        "atmosphere/nro_patches",
+    };
+    for (size_t g = 0; g < sizeof(GROUPS) / sizeof(GROUPS[0]); g++) {
+        char srcDir[FS_MAX_PATH];
+        snprintf(srcDir, sizeof(srcDir), "%s/%s", PROVISION_SRC_ROOT, GROUPS[g]);
+        DIR *d = opendir(srcDir);
+        if (!d) continue;
+        struct dirent *e;
+        while ((e = readdir(d)) != NULL) {
+            if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, "..")) continue;
+            char sp[FS_MAX_PATH];
+            snprintf(sp, sizeof(sp), "%s/%s", srcDir, e->d_name);
+            struct stat st;
+            if (stat(sp, &st) != 0 || !S_ISDIR(st.st_mode)) continue;
+            char dp[FS_MAX_PATH];
+            snprintf(dp, sizeof(dp), "%s/%s/%s", PROVISION_DST_ROOT, GROUPS[g], e->d_name);
+            removeDirAndContents(dp);
+        }
+        closedir(d);
+    }
+}
+
 bool certs_provision(void) {
+    cleanProvisionedPatchDirs();
     bool ok = copyTree(PROVISION_SRC_ROOT, PROVISION_DST_ROOT);
     fsdevCommitDevice("sdmc");
     switchnet_trace(ok ? "certs: provisioned (CA + CA-bypass patches)"
