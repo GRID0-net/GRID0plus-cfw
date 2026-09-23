@@ -193,7 +193,35 @@ call site (`0x6E2C58`), so the NPLN gRPC channel goes through it too.
 `tools/make_exefs_ips.py` now builds both files from the RVA and adds the
 header itself; `28C4287A…` records are `0x6E2D54` and `0x6E2048`.
 
-## Status: both patches built, neither tested on real hardware
+## The third check: NPLN's gRPC channel has its own verify callback
+
+Even with both patches above at the right addresses, Splatoon 3's lobby
+connection is not covered by them: the NPLN tenant is gRPC (the ClientHello
+offers ALPN `grpc-exp,h2`), and the gRPC channel installs its own TLS
+verification callback. At RVA `0x157A20` a config byte is loaded into `w10`,
+then
+
+```
+0x157a3c: cmp  w10, #0
+0x157a40: csel x2, x9, x8, eq     ; x8 = 0x157F10, x9 = 0x157F20 (two callbacks)
+0x157a44: bl   0x20DBE0           ; install it on the channel (x0 = channel, w1 = 1)
+```
+
+`s3grpcverify_bypass` replaces the `ldrb w10, [x21, #0x38]` at `0x157A20`
+with `mov w10, #1` (`2a 00 80 52`), so the `0x157F10` callback is always the
+one installed.
+
+Credit: the location comes from Kinnay's `generate_patch.py` in
+[NPLN-Protocols](https://github.com/kinnay/NPLN-Protocols) (the tool the
+Nextendo developers pointed to), which finds this `mov/mov/cmp/csel`
+sequence in any NPLN game and forces `w10 = 1`. That repository carries no
+license, so neither its script nor its output is copied here: the address
+was checked against this project's own v11.3.0 decompile and the file is
+built with `tools/make_exefs_ips.py`. Its output for the same `main`
+(`IPS32` record at `0x157B20`) agrees with ours byte for byte, and it also
+adds `0x100` to the offset — an independent confirmation of the v0.4.5 fix.
+
+## Status: three patches built, the first two untested, the third new
 
 Whether one, both, or neither is sufficient to reach a SwitchNet server
 from Splatoon 3 is genuinely unknown until someone actually launches the
