@@ -32,10 +32,16 @@ bool apply_switchnet(const char *ip) {
     // (telemetry null-routing) with ours, so nothing about stock privacy
     // protection regresses just because SwitchNet mode is active.
     bool iniOk = hosts_set_dns_mitm(true, true);
+    // false: this emuMMC's real PRODINFO, not a blanked one. It never leaves
+    // the emuMMC for real Nintendo (DNS-MITM keeps it fully isolated to
+    // SwitchNet's own server), and the account/BAAS auth flow that reads
+    // PRODINFO-derived device identity needs the real thing -- see
+    // hosts_set_blank_prodinfo_emummc's own doc comment.
+    bool prodinfoOk = hosts_set_blank_prodinfo_emummc(false);
 
     fsdevCommitDevice("sdmc");
-    switchnet_trace((hostsOk && iniOk) ? "apply_switchnet: done" : "apply_switchnet: FAILED");
-    return hostsOk && iniOk && certsOk;
+    switchnet_trace((hostsOk && iniOk && prodinfoOk) ? "apply_switchnet: done" : "apply_switchnet: FAILED");
+    return hostsOk && iniOk && certsOk && prodinfoOk;
 }
 
 bool apply_default(void) {
@@ -56,10 +62,15 @@ bool apply_default(void) {
     // removal above, so Default mode is never silently still redirected.
     bool hostsGone = !hosts_is_switchnet_active();
     bool iniOk = hostsGone ? hosts_set_dns_mitm(true, true) : hosts_set_dns_mitm(false, false);
+    // true: blank this emuMMC's PRODINFO again. The anti-ban reasoning is the
+    // same as returning to real Nintendo -- this console's real device
+    // identity should never be presented on a boot that might reach
+    // Nintendo's actual servers, even by mistake.
+    bool prodinfoOk = hosts_set_blank_prodinfo_emummc(true);
 
     fsdevCommitDevice("sdmc");
-    switchnet_trace(iniOk ? "apply_default: done" : "apply_default: FAILED");
-    return iniOk;
+    switchnet_trace((iniOk && prodinfoOk) ? "apply_default: done" : "apply_default: FAILED");
+    return iniOk && prodinfoOk;
 }
 
 Result switchnet_reboot(void) {

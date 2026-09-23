@@ -254,3 +254,77 @@ bool hosts_set_dns_mitm(bool enable, bool addDefaults) {
     free(out.buf);
     return ok;
 }
+
+// Same rewrite-preserving-everything-else shape as hosts_set_dns_mitm above,
+// for exosphere.ini's single blank_prodinfo_emummc key under [exosphere]
+// instead of system_settings.ini's two atmosphere keys.
+bool hosts_set_blank_prodinfo_emummc(bool blank) {
+    static const char *K = "blank_prodinfo_emummc";
+    const char *V = blank ? "blank_prodinfo_emummc=1\n" : "blank_prodinfo_emummc=0\n";
+
+    char *buf = NULL;
+    long sz = 0;
+    FILE *f = fopen(SWITCHNET_EXOSPHERE_INI, "rb");
+    if (f) {
+        fseek(f, 0, SEEK_END);
+        sz = ftell(f);
+        fseek(f, 0, SEEK_SET);
+        buf = (char *)malloc((size_t)sz + 1);
+        if (!buf) { fclose(f); return false; }
+        if (sz > 0) {
+            size_t nr = fread(buf, 1, (size_t)sz, f);
+            if (nr != (size_t)sz) { free(buf); buf = NULL; sz = 0; }
+        }
+        if (buf) buf[sz] = '\0';
+        fclose(f);
+    }
+
+    strbuf out;
+    sb_init(&out);
+    if (!out.buf) { free(buf); return false; }
+
+    bool inExo = false, sawExo = false, setK = false;
+    char *line = buf;
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line + 1) : strlen(line);
+        char saved = line[llen];
+        line[llen] = '\0';
+
+        char *t = line;
+        while (*t == ' ' || *t == '\t') t++;
+
+        if (*t == '[') {
+            if (inExo && !setK) { sb_append(&out, V); setK = true; }
+            inExo = (strncmp(t, "[exosphere]", 11) == 0);
+            if (inExo) sawExo = true;
+            sb_append(&out, line);
+        } else if (inExo) {
+            char *k = t;
+            if (*k == ';' || *k == '#') { k++; while (*k == ' ' || *k == '\t') k++; }
+            if (strncmp(k, K, strlen(K)) == 0) { sb_append(&out, V); setK = true; }
+            else sb_append(&out, line);
+        } else {
+            sb_append(&out, line);
+        }
+
+        line[llen] = saved;
+        line = nl ? nl + 1 : NULL;
+    }
+    free(buf);
+
+    if (inExo && !setK) {
+        if (out.len > 0 && out.buf[out.len - 1] != '\n') sb_append(&out, "\n");
+        sb_append(&out, V);
+    }
+    if (!sawExo) {
+        if (out.len > 0 && out.buf[out.len - 1] != '\n') sb_append(&out, "\n");
+        sb_append(&out, "[exosphere]\n");
+        sb_append(&out, V);
+    }
+
+    if (!out.buf) return false;
+    bool ok = writeTextFile(SWITCHNET_EXOSPHERE_INI, out.buf);
+    free(out.buf);
+    return ok;
+}

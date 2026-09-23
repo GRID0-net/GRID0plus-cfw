@@ -27,6 +27,11 @@
 #define SWITCHNET_HOSTS_EMUMMC SWITCHNET_HOSTS_DIR "/emummc.txt"
 #define SWITCHNET_SETTINGS_INI "sdmc:/atmosphere/config/system_settings.ini"
 
+// exosphere.ini lives at the SD card root, not under atmosphere/config like
+// system_settings.ini above -- a different file, read by a different stage
+// of boot (Exosphere itself, not Atmosphere's own config loader).
+#define SWITCHNET_EXOSPHERE_INI "sdmc:/exosphere.ini"
+
 // Builds the hosts file content redirecting to `ip`. Caller must free() the
 // returned buffer.
 char *hosts_build(const char *ip);
@@ -46,5 +51,21 @@ bool hosts_is_switchnet_active(void);
 // Edits system_settings.ini, setting enable_dns_mitm / add_defaults_to_dns_hosts
 // under [atmosphere] while preserving every other key/section.
 bool hosts_set_dns_mitm(bool enable, bool addDefaults);
+
+// Edits exosphere.ini's [exosphere] section, setting blank_prodinfo_emummc
+// while preserving every other key/section. `blank` true writes 1 (the
+// account sysmodule sees a blanked PRODINFO on this emuMMC), false writes 0
+// (the real one). Only ever touches the emuMMC key -- sysmmc's own PRODINFO
+// handling is not this project's concern, and is never written here.
+//
+// SwitchNet mode wants this at 0: the emuMMC's account/BAAS auth flow reads
+// PRODINFO-derived device identity, and a blanked one is exactly the shape
+// Prelude-Nro's own source documents causing account-link failures (their
+// comment names 2123-0011) when its own "server" mode needs a real one.
+// Default mode wants it back at 1, the same anti-ban reasoning Prelude
+// applies when returning to real Nintendo: this emuMMC's real device
+// identity should never be presented on a boot that might reach Nintendo's
+// actual servers, even by mistake.
+bool hosts_set_blank_prodinfo_emummc(bool blank);
 
 #endif // SWITCHNET_HOSTS_H
