@@ -101,9 +101,19 @@ char *hosts_build(const char *ip) {
     sb_appendf(&sb, "%s service-status-lp1.cdn.nintendo.net\n", ip);
     sb_appendf(&sb, "%s gamesync.npln.nintendo.net\n", ip);
 
-    sb_append(&sb, "\n# --- Telemetry -> null-routed (kept off in both modes) ---\n");
-    sb_append(&sb, "0.0.0.0          receive-%.dg.srv.nintendo.net\n");
-    sb_append(&sb, "0.0.0.0          receive-%.er.srv.nintendo.net\n");
+    // Used to be null-routed. NextendoNetwork/Prelude's own commit history
+    // (facts only, not its code) documents a real hardware measurement:
+    // the NSO/friends applet (0100000000000816) waits SYNCHRONOUSLY for an
+    // HTTP response from these two hosts before it loads its own main
+    // module (lp1.nso). Null-routed, the connection hangs until timeout
+    // and the applet gives up without ever reaching lp1.nso -- no profile
+    // icon handling, plausibly more of the applet than that. Matches
+    // switchnet's own internal/nintendo/hosts.go (ServiceStubs), which
+    // reads the body, discards it, and answers 200 immediately --
+    // telemetry still never reaches real Nintendo.
+    sb_append(&sb, "\n# --- Telemetry -> SwitchNet, read and discarded ---\n");
+    sb_appendf(&sb, "%s receive-%%.dg.srv.nintendo.net\n", ip);
+    sb_appendf(&sb, "%s receive-%%.er.srv.nintendo.net\n", ip);
 
     // None of the hosts below match the broad *.nintendo.com / *.srv.nintendo.net
     // patterns above (they're on .nintendo.net or .cdn.nintendo.net directly), so
