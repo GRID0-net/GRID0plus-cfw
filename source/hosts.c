@@ -119,25 +119,27 @@ char *hosts_build(const char *ip) {
     sb_append(&sb, "0.0.0.0          atumn.hac.lp1.d4c.nintendo.net\n");
     sb_append(&sb, "0.0.0.0          aqua.hac.lp1.d4c.nintendo.net\n");
 
-    // Observed on real hardware reaching a real Nintendo IP when left off this
-    // list entirely (switchnet's own 2026-08-26 capture, same failure mode as
-    // the d4c hosts above): background content delivery, not needed yet.
-    sb_append(&sb, "\n# --- BCAT background content delivery -> null-routed ---\n");
-    sb_append(&sb, "0.0.0.0          bcat-list-lp1.cdn.nintendo.net\n");
-    sb_append(&sb, "0.0.0.0          bcat-data-lp1.cdn.nintendo.net\n");
-
-    // bcat-topics-lp1 is NOT part of the BCAT delivery-cache group above
-    // despite the name -- it is the System news feed, and its shape is
-    // confirmed (a real capture against Nextendo shows the console's
-    // request carries no conditional-GET header and the real server
-    // answers 304 Not Modified with an empty body regardless). Null-routed
-    // here made the console's very first boot request fail outright:
-    // "a communication error has occurred" appeared instantly on opening
-    // the hall, before IssuePrearrangedUserToken even fires. Matches
-    // switchnet's own internal/nintendo/hosts.go (ServiceStubs), which
-    // answers this host for real now -- see internal/stubs.newsTopics
-    // there.
-    sb_append(&sb, "\n# --- System news/topics -> SwitchNet ---\n");
+    // All three bcat-* hosts point at SwitchNet, none null-routed. Used to
+    // null-route bcat-list-lp1/bcat-data-lp1 (observed on real hardware
+    // reaching a real Nintendo IP when left off this list entirely --
+    // switchnet's own 2026-08-26 capture, same failure mode as the d4c
+    // hosts above) -- but leaving them unreachable is its own real, hard
+    // failure, not a safe default: NextendoNetwork/Prelude's own commit
+    // history (facts only, not its code) documents Splatoon 3 raising
+    // 2122-2403 (module 122 = bcat) when bcat-list-lp1 was unreachable.
+    // Reproduced independently for bcat-topics-lp1 on SwitchNet's own
+    // hardware on 2026-09-24: null-routed, the console's very first boot
+    // request failed outright, "a communication error has occurred"
+    // appeared instantly on opening the hall, before
+    // IssuePrearrangedUserToken even fires.
+    //
+    // All three answer the same unconditional 304 Not Modified server-side
+    // now (switchnet's internal/stubs.newsTopics) -- "your cache is
+    // current," no data sent, which is what stops the hard failure without
+    // inventing BCAT content SwitchNet does not have.
+    sb_append(&sb, "\n# --- BCAT (all three) -> SwitchNet, answered 304 ---\n");
+    sb_appendf(&sb, "%s bcat-list-lp1.cdn.nintendo.net\n", ip);
+    sb_appendf(&sb, "%s bcat-data-lp1.cdn.nintendo.net\n", ip);
     sb_appendf(&sb, "%s bcat-topics-lp1.cdn.nintendo.net\n", ip);
 
     // Phase 3 (eShop) hosts, not built on this server -- same reasoning as the
