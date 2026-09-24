@@ -144,9 +144,21 @@ char *hosts_build(const char *ip) {
 
     // Phase 3 (eShop) hosts, not built on this server -- same reasoning as the
     // d4c/BCAT groups above, so null-routed rather than left to fall through.
-    // hac.lp1.savanna.srv.nintendo.net and cdn.accounts.nintendo.com are
-    // deliberately NOT listed here: both already match *.srv.nintendo.net /
-    // *.nintendo.com above and go to SwitchNet, not real Nintendo.
+    //
+    // hac.lp1.savanna.srv.nintendo.net and cdn.accounts.nintendo.com used to
+    // be deliberately left off this list, reasoned that both already match
+    // *.srv.nintendo.net / *.nintendo.com above and "go to SwitchNet, not
+    // real Nintendo" was good enough. It is not: switchnet's own
+    // internal/nintendo/hosts.go -- the authoritative list this file is
+    // meant to mirror -- marks both ServiceBlackhole (phase 3: the newer
+    // eShop applet; static Nintendo Account sign-in assets, neither built),
+    // the same as every other host in this section. Reaching SwitchNet's
+    // edge with no server block registered for them is not the same as
+    // being correctly null-routed -- it is exactly the ambiguous "unhandled
+    // but not explicitly refused" case the rest of this file goes out of
+    // its way to avoid (see the BCAT lesson above). Listed explicitly here,
+    // after the wildcards, so Atmosphere's own last-match-wins rule
+    // overrides them the same way every other exception in this file does.
     sb_append(&sb, "\n# --- eShop (not built) -> null-routed ---\n");
     sb_append(&sb, "0.0.0.0          atum.hac.lp1.d4c.nintendo.net\n");
     sb_append(&sb, "0.0.0.0          bugyo.hac.lp1.eshop.nintendo.net\n");
@@ -154,6 +166,8 @@ char *hosts_build(const char *ip) {
     sb_append(&sb, "0.0.0.0          ecs-lp1.hac.shop.nintendo.net\n");
     sb_append(&sb, "0.0.0.0          ias-lp1.hac.shop.nintendo.net\n");
     sb_append(&sb, "0.0.0.0          idbe-hac.cdn.nintendo.net\n");
+    sb_append(&sb, "0.0.0.0          hac.lp1.savanna.srv.nintendo.net\n");
+    sb_append(&sb, "0.0.0.0          cdn.accounts.nintendo.com\n");
 
     sb_append(&sb, "\n# --- Browser connectivity check -> SwitchNet ---\n");
     sb_appendf(&sb, "%s conntest.nintendowifi.net\n", ip);
