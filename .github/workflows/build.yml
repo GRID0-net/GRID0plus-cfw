@@ -59,14 +59,13 @@ jobs:
 
       - name: Prepare versioned artifact
         run: |
-          cp -f switchnet.nro "SwitchNet-Toolbox-v${{ steps.version.outputs.app_version }}.nro"
           ls -l *.nro
 
       - name: Upload NRO artifact
         uses: actions/upload-artifact@v4
         with:
           name: SwitchNet-Toolbox-v${{ steps.version.outputs.app_version }}
-          path: SwitchNet-Toolbox-v${{ steps.version.outputs.app_version }}.nro
+          path: switchnet.nro
           if-no-files-found: error
 
   release:
@@ -106,5 +105,5 @@ jobs:
         with:
           tag_name: v${{ needs.build.outputs.app_version }}
           name: ${{ needs.build.outputs.release_name }}
-          files: SwitchNet-Toolbox-v${{ needs.build.outputs.app_version }}.nro
+          files: switchnet.nro
           generate_release_notes: true
