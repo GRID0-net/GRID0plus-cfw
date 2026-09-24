@@ -125,7 +125,20 @@ char *hosts_build(const char *ip) {
     sb_append(&sb, "\n# --- BCAT background content delivery -> null-routed ---\n");
     sb_append(&sb, "0.0.0.0          bcat-list-lp1.cdn.nintendo.net\n");
     sb_append(&sb, "0.0.0.0          bcat-data-lp1.cdn.nintendo.net\n");
-    sb_append(&sb, "0.0.0.0          bcat-topics-lp1.cdn.nintendo.net\n");
+
+    // bcat-topics-lp1 is NOT part of the BCAT delivery-cache group above
+    // despite the name -- it is the System news feed, and its shape is
+    // confirmed (a real capture against Nextendo shows the console's
+    // request carries no conditional-GET header and the real server
+    // answers 304 Not Modified with an empty body regardless). Null-routed
+    // here made the console's very first boot request fail outright:
+    // "a communication error has occurred" appeared instantly on opening
+    // the hall, before IssuePrearrangedUserToken even fires. Matches
+    // switchnet's own internal/nintendo/hosts.go (ServiceStubs), which
+    // answers this host for real now -- see internal/stubs.newsTopics
+    // there.
+    sb_append(&sb, "\n# --- System news/topics -> SwitchNet ---\n");
+    sb_appendf(&sb, "%s bcat-topics-lp1.cdn.nintendo.net\n", ip);
 
     // Phase 3 (eShop) hosts, not built on this server -- same reasoning as the
     // d4c/BCAT groups above, so null-routed rather than left to fall through.

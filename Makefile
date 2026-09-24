@@ -23,7 +23,7 @@ APP_TITLE   := SwitchNet Toolbox
 APP_AUTHOR  := SwitchNet
 # Keep in lockstep with source/version.h (SWITCHNET_VERSION_*) and the GitHub
 # release tag (vX.Y.Z) — the updater compares this against GitHub releases.
-APP_VERSION := 0.5.0
+APP_VERSION := 0.5.1
 APP_ICON    := icon.jpg
 
 #---------------------------------------------------------------------------------
