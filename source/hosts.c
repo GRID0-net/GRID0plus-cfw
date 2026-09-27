@@ -179,6 +179,13 @@ char *hosts_build(const char *ip) {
     sb_append(&sb, "0.0.0.0          hac.lp1.savanna.srv.nintendo.net\n");
     sb_append(&sb, "0.0.0.0          cdn.accounts.nintendo.com\n");
 
+    // Only the default server is known to have a second address; a custom
+    // IP keeps nncs2 on the wildcard (NAT check degraded, rest unaffected).
+    if (strcmp(ip, SWITCHNET_SERVER_IP_DEFAULT) == 0) {
+        sb_append(&sb, "\n# --- Pia NAT check: nncs2 needs its own IP ---\n");
+        sb_append(&sb, SWITCHNET_NATCHECK_SECONDARY_IP_DEFAULT " nncs2-%.n.n.srv.nintendo.net\n");
+    }
+
     sb_append(&sb, "\n# --- Browser connectivity check -> SwitchNet ---\n");
     sb_appendf(&sb, "%s conntest.nintendowifi.net\n", ip);
     sb_appendf(&sb, "%s ctest.cdn.nintendo.net\n", ip);
