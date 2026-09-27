@@ -109,7 +109,7 @@ static void removeDirAndContents(const char *dir) {
 // This list is append-only. A path leaves it only when a comment right here
 // explains why it's certain no released build ever wrote there -- removing
 // an entry quietly is exactly how the bug this list exists to prevent comes
-// back: a console that installed an old SwitchNet version keeps orphaned
+// back: a console that installed an old GRID0+ version keeps orphaned
 // files a newer version's own romfs:/sd/ tree (see copyTree/removeTree
 // above) no longer mentions, so it can never see them to clean up on its
 // own. Pre-v0.3.0 (before commit e3f7a62 restructured certs.c into a tree
@@ -119,7 +119,7 @@ static void removeDirAndContents(const char *dir) {
 // touched this app on v0.2.x has a CA installed but none of the patches
 // that make the system SSL service and browser applet actually trust it
 // (error 2123-0308 during account linking) until they both update the .nro
-// itself AND re-run "Switch to SwitchNet" -- reapplying alone won't remove
+// itself AND re-run "Switch to GRID0+" -- reapplying alone won't remove
 // anything, since nothing here has ever changed CONTENT across a version,
 // only gained new files. This list matters for the opposite direction:
 // guaranteeing "Switch to Default" fully cleans up regardless of which
@@ -156,7 +156,7 @@ static void purgeLegacyOwnedPaths(void) {
 
 // exefs_patches and nro_patches leaves are named by opaque per-firmware
 // build-ID hash, not by a fixed filename copyTree's overwrite-in-place can
-// keep in sync. If a later SwitchNet release ships a SMALLER set for a patch
+// keep in sync. If a later GRID0+ release ships a SMALLER set for a patch
 // name -- dropping a build id, or picking up a corrected upstream file under
 // the same name as an old broken one -- copyTree alone leaves every
 // previously-written file sitting there untouched, because nothing removes
@@ -164,7 +164,7 @@ static void purgeLegacyOwnedPaths(void) {
 // project measured causing 2123-0308 on a real console: the old on-SD
 // disable_ca_verification carried an incomplete build-id set for its
 // firmware, and copyTree's own "only ever gains files" behaviour meant
-// simply reapplying a newer SwitchNet build could never fix it by itself.
+// simply reapplying a newer GRID0+ build could never fix it by itself.
 //
 // So before copyTree runs, every patch-name directory the CURRENT romfs
 // ships under exefs_patches/ or nro_patches/ is deleted wholesale from the

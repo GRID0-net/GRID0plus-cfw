@@ -12,7 +12,7 @@
 #include <switch.h>
 
 // switchnet-nro's source is a private repository, so an unauthenticated
-// request for its releases from the console would get a 404. SwitchNet's own
+// request for its releases from the console would get a 404. GRID0+'s own
 // toolbox API holds the GitHub credential instead and answers the same
 // tag_name/browser_download_url/size shape a real GitHub response would —
 // see switchnet's internal/toolbox package. The console never sees, and
@@ -106,39 +106,48 @@ static int semverCompare(int amaj, int amin, int apatch, int bmaj, int bmin, int
 }
 
 SwitchnetUpdate update_check(void) {
-    SwitchnetUpdate u = { false, 0, 0, 0, 0 };
+    SwitchnetUpdate u = { false, 0, 0, 0, 0, 0 };
 
-    socketInitializeDefault();
-    if (R_FAILED(sslInitialize(4))) { socketExit(); return u; }
+    if (!net_ready()) { u.error = NET_ERR_NOT_READY; return u; }
 
     size_t len = 0;
     int status = 0;
-    unsigned char *body = net_https_get(g_server_ip, SWITCHNET_TOOLBOX_PORT,
-                                         TOOLBOX_UPDATES_PATH, &len, &status);
-    sslExit();
-    socketExit();
+    unsigned char *body = NULL;
+    // One retry: the first request after launch can race DNS/network bring-up.
+    for (int attempt = 0; attempt < 2 && !body; attempt++) {
+        body = net_https_get(g_server_ip, SWITCHNET_TOOLBOX_PORT, TOOLBOX_UPDATES_PATH, &len, &status);
+        if (!body && attempt == 0) svcSleepThread(1000000000ULL);
+    }
+    if (!body || status != 200) {
+        u.error = status != 0 ? status : NET_ERR_UNKNOWN;
+        free(body);
+        return u;
+    }
 
-    if (body && status == 200) {
-        char *json = (char *)malloc(len + 1);
-        if (json) {
-            memcpy(json, body, len);
-            json[len] = '\0';
+    char *json = (char *)malloc(len + 1);
+    if (!json) { free(body); u.error = NET_ERR_OOM; return u; }
+    memcpy(json, body, len);
+    json[len] = '\0';
+    free(body);
 
-            int maj = 0, min = 0, patch = 0;
-            long sz = 0;
-            if (parseReleaseJson(json, &maj, &min, &patch, s_downloadUrl, sizeof(s_downloadUrl), &sz) &&
-                semverCompare(maj, min, patch,
-                              SWITCHNET_VERSION_MAJOR, SWITCHNET_VERSION_MINOR, SWITCHNET_VERSION_PATCH) > 0 &&
-                sz > 4096) {
+    int maj = 0, min = 0, patch = 0;
+    long sz = 0;
+    if (!parseReleaseJson(json, &maj, &min, &patch, s_downloadUrl, sizeof(s_downloadUrl), &sz)) {
+        u.error = NET_ERR_PROTO;
+    } else {
+        u.maj = maj; u.min = min; u.patch = patch;
+        if (semverCompare(maj, min, patch, SWITCHNET_VERSION_MAJOR, SWITCHNET_VERSION_MINOR,
+                          SWITCHNET_VERSION_PATCH) > 0) {
+            if (sz > 4096) {
                 u.available = true;
-                u.maj = maj; u.min = min; u.patch = patch;
                 u.size = sz;
                 s_downloadSize = sz;
+            } else {
+                u.error = NET_ERR_PROTO;
             }
-            free(json);
         }
-        free(body);
     }
+    free(json);
     return u;
 }
 
@@ -181,12 +190,11 @@ SwitchnetUpdateResult update_apply(long expectedSize, SwitchnetUpdateProgressFn 
     }
     if (!f) { switchnet_trace("update: could not create .new file"); return SWITCHNET_UPDATE_WRITE_FAIL; }
 
-    socketInitializeDefault();
-    if (R_FAILED(sslInitialize(4))) { fclose(f); socketExit(); return SWITCHNET_UPDATE_NET_FAIL; }
+    if (!net_ready()) { fclose(f); return SWITCHNET_UPDATE_NET_FAIL; }
 
     char hostPort[256] = {0}, path[1024] = {0};
     if (sscanf(s_downloadUrl, "https://%255[^/]%1023s", hostPort, path) < 2) {
-        sslExit(); fclose(f); remove(selfTmpPath()); socketExit();
+        fclose(f); remove(selfTmpPath());
         return SWITCHNET_UPDATE_NET_FAIL;
     }
     // The toolbox relay's download URL names its own port explicitly
@@ -208,8 +216,6 @@ SwitchnetUpdateResult update_apply(long expectedSize, SwitchnetUpdateProgressFn 
     int status = 0;
     long len = net_https_get_to_file(host, port, path, f, &status, onProgress ? progressRelay : NULL);
     fclose(f);
-    sslExit();
-    socketExit();
 
     if (len == -2) { switchnet_trace("update: write to .new interrupted (SD full?)"); remove(selfTmpPath()); return SWITCHNET_UPDATE_WRITE_FAIL; }
     if (len < 0)   { remove(selfTmpPath()); return SWITCHNET_UPDATE_NET_FAIL; }

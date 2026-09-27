@@ -1,6 +1,6 @@
-// SwitchNet Toolbox — minimal HTTPS client (raw BSD sockets + the console's
+// GRID0+ Toolbox — minimal HTTPS client (raw BSD sockets + the console's
 // native SSL service), used by the updater and the server-status screen to
-// talk to GitHub and to SwitchNet's own toolbox API. No libcurl or other
+// talk to GitHub and to GRID0+'s own toolbox API. No libcurl or other
 // portlib dependency.
 #ifndef SWITCHNET_NET_H
 #define SWITCHNET_NET_H
@@ -13,10 +13,16 @@
 #define NET_ERR_TLS     -3   // TLS handshake / socket setup failed
 #define NET_ERR_PROTO   -4   // malformed HTTP response
 #define NET_ERR_OOM     -5   // allocation failure
+#define NET_ERR_NOT_READY -6 // sockets/SSL could not be initialized
+
+// Once, from main, around the whole app. Every net_* call needs it.
+void net_init(void);
+void net_exit(void);
+bool net_ready(void);
 
 // HTTPS GET https://host:port/path. Requires socketInitializeDefault() and
 // sslInitialize() to already be active. `host` may be a hostname (resolved
-// normally) or a literal dotted-quad IP — SwitchNet's own toolbox API is
+// normally) or a literal dotted-quad IP — GRID0+'s own toolbox API is
 // reached by IP, on its own port, never by a redirected Nintendo hostname.
 // Returns the response body (malloc'd, caller frees) and its length, or NULL
 // on failure (*out_status carries a NET_ERR_* code or the HTTP status).

@@ -23,11 +23,29 @@ static const char *resolveHost(const char *host) {
 }
 
 bool net_dns_warmup(const char *host) {
-    if (R_FAILED(socketInitializeDefault())) return false;
-    bool ok = resolveHost(host) != NULL;
-    socketExit();
-    return ok;
+    return resolveHost(host) != NULL;
 }
+
+// Sockets and SSL are brought up once for the app's whole life (net_init,
+// from main) rather than around each request. libnx's init/exit are not
+// reference counted: the DNS warmup thread and a request on the main thread
+// each doing their own init+exit tore the sockets down under one another,
+// and the update check then failed -- and was reported as "up to date".
+static bool s_netUp = false;
+static bool s_sslUp = false;
+
+void net_init(void) {
+    s_netUp = R_SUCCEEDED(socketInitializeDefault());
+    s_sslUp = s_netUp && R_SUCCEEDED(sslInitialize(4));
+}
+
+void net_exit(void) {
+    if (s_sslUp) sslExit();
+    if (s_netUp) socketExit();
+    s_sslUp = s_netUp = false;
+}
+
+bool net_ready(void) { return s_netUp && s_sslUp; }
 
 static int tcpConnect(const char *ip, int port) {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -102,7 +120,7 @@ static bool sslConnect(const char *host, int port, SslContext *sslCtx, SslConnec
 
     // The system trust store knows neither GitHub's CA chain (this build's
     // firmware-side trust patches, if installed at all, only cover the
-    // SwitchNet CA) nor SwitchNet's own self-issued edge certificate, so
+    // GRID0+ CA) nor GRID0+'s own self-issued edge certificate, so
     // verification is skipped for both. A release download's integrity is
     // still checked by size against what /updates/latest reported.
     if (ok) sslConnectionSetOption(sslConn, SslOptionType_SkipDefaultVerify, true);
@@ -138,7 +156,7 @@ static int sendHttpGet(SslConnection *sslConn, const char *host, const char *pat
     char req[2560];
     int rl = snprintf(req, sizeof(req),
                       "GET %s HTTP/1.1\r\nHost: %s\r\n"
-                      "User-Agent: SwitchNetToolbox\r\n"
+                      "User-Agent: GRID0+Toolbox\r\n"
                       "Accept: */*\r\nConnection: close\r\n\r\n",
                       path, host);
     // snprintf returns the length the request WOULD have needed, which can

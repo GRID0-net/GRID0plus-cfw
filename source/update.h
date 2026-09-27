@@ -1,4 +1,4 @@
-// SwitchNet Toolbox — self-updater via GitHub Releases.
+// GRID0+ Toolbox — self-updater via GitHub Releases.
 //
 // On demand (when the user selects "Check for updates"), queries GitHub's
 // releases API, compares the tag's semver against SWITCHNET_VERSION_*, and if
@@ -13,6 +13,9 @@ typedef struct {
     bool available;
     int maj, min, patch;
     long size;   // expected .nro size, for a post-download integrity check
+    // 0 when the check completed (available says whether there is an update);
+    // otherwise a NET_ERR_* code or the HTTP status the server answered with.
+    int error;
 } SwitchnetUpdate;
 
 typedef enum {

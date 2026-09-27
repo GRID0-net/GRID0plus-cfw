@@ -30,11 +30,11 @@ bool apply_switchnet(const char *ip) {
     bool hostsOk = hosts_write_all(ip);
     // add_defaults_to_dns_hosts=true merges Atmosphère's own default entries
     // (telemetry null-routing) with ours, so nothing about stock privacy
-    // protection regresses just because SwitchNet mode is active.
+    // protection regresses just because GRID0+ mode is active.
     bool iniOk = hosts_set_dns_mitm(true, true);
     // false: this emuMMC's real PRODINFO, not a blanked one. It never leaves
     // the emuMMC for real Nintendo (DNS-MITM keeps it fully isolated to
-    // SwitchNet's own server), and the account/BAAS auth flow that reads
+    // GRID0+'s own server), and the account/BAAS auth flow that reads
     // PRODINFO-derived device identity needs the real thing -- see
     // hosts_set_blank_prodinfo_emummc's own doc comment.
     bool prodinfoOk = hosts_set_blank_prodinfo_emummc(false);

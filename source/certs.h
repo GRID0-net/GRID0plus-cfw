@@ -1,9 +1,9 @@
-// SwitchNet Toolbox — certificate trust provisioning.
+// GRID0+ Toolbox — certificate trust provisioning.
 //
 // A private server needs the console to trust its TLS certificate. This
 // module mirrors romfs:/sd/... onto the SD card, which installs:
 //
-//  - SwitchNet's root CA (the actual certificate, embedded at build time)
+//  - GRID0+'s root CA (the actual certificate, embedded at build time)
 //    at the paths the browser applet's CA bundle and WebView-based account
 //    linking read from, plus a reference copy under sdmc:/switchnet/certs/.
 //  - The public disable_ca_verification / disable_browser_ca_verification
@@ -39,7 +39,7 @@ bool certs_provision(void);
 // updated the .nro itself without ever running "Switch to Default" first,
 // could accumulate files a newer build's tree-mirror can no longer see to
 // clean up — orphaned, not wrong-content (copyFile always overwrites
-// same-path files), but still SwitchNet's to remove.
+// same-path files), but still GRID0+'s to remove.
 void certs_remove(void);
 
 #endif // SWITCHNET_CERTS_H

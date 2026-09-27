@@ -1,11 +1,11 @@
-// SwitchNet Toolbox — entry point and menu.
+// GRID0+ Toolbox — entry point and menu.
 //
 // A small text menu (no custom graphics — this app only needs to be
 // readable, not pretty):
 //
-//   Switch to SwitchNet
+//   Switch to GRID0+
 //   Switch to Default (restore original hosts)
-//   Set custom SwitchNet IP
+//   Set custom GRID0+ IP
 //   Reset IP to default
 //   Back up hosts folder now
 //   Restore backup on Default mode: ON/OFF
@@ -45,9 +45,9 @@ enum {
 
 static const char *menuLabel(int i, char *buf, size_t cap) {
     switch (i) {
-        case MENU_APPLY_SWITCHNET: return "Switch to SwitchNet";
+        case MENU_APPLY_SWITCHNET: return "Switch to GRID0+";
         case MENU_APPLY_DEFAULT:   return "Switch to Default (restore original hosts)";
-        case MENU_SET_IP:          return "Set custom SwitchNet IP";
+        case MENU_SET_IP:          return "Set custom GRID0+ IP";
         case MENU_RESET_IP:        return "Reset IP to default (" SWITCHNET_SERVER_IP_DEFAULT ")";
         case MENU_BACKUP_NOW:      return "Back up hosts folder now";
         case MENU_TOGGLE_RESTORE:
@@ -65,15 +65,15 @@ static void drawHeader(void) {
     // While the major version is 0 this project is still in beta — say so
     // plainly instead of implying a 1.0-grade release.
     if (SWITCHNET_VERSION_MAJOR == 0)
-        printf("SwitchNet Toolbox  beta-%d.%d.%d\n",
+        printf("GRID0+ Toolbox  beta-%d.%d.%d\n",
                SWITCHNET_VERSION_MAJOR, SWITCHNET_VERSION_MINOR, SWITCHNET_VERSION_PATCH);
     else
-        printf("SwitchNet Toolbox  v%d.%d.%d\n",
+        printf("GRID0+ Toolbox  v%d.%d.%d\n",
                SWITCHNET_VERSION_MAJOR, SWITCHNET_VERSION_MINOR, SWITCHNET_VERSION_PATCH);
     printf("========================================\n\n");
     printf("Current mode : %s\n",
            apply_current_mode() == SWITCHNET_MODE_SWITCHNET ? "SWITCHNET" : "DEFAULT");
-    printf("SwitchNet IP : %s\n\n", g_server_ip);
+    printf("GRID0+ IP : %s\n\n", g_server_ip);
 }
 
 static bool isValidIPv4(const char *s) {
@@ -133,7 +133,7 @@ static bool promptIpInput(char *out, size_t cap) {
 
     swkbdConfigMakePresetDefault(&kbd);
     swkbdConfigSetInitialText(&kbd, g_server_ip);
-    swkbdConfigSetGuideText(&kbd, "SwitchNet server IP, e.g. 89.168.58.206");
+    swkbdConfigSetGuideText(&kbd, "GRID0+ server IP, e.g. 89.168.58.206");
     swkbdConfigSetStringLenMax(&kbd, (int)cap - 1);
 
     char buf[64] = {0};
@@ -171,8 +171,26 @@ static void runUpdateFlow(PadState *pad) {
 
     SwitchnetUpdate upd = update_check();
 
+    if (upd.error != 0) {
+        char why[200];
+        switch (upd.error) {
+        case NET_ERR_CONNECT:   snprintf(why, sizeof(why), "Could not connect to %s:%d. Check the server IP and your internet connection.", g_server_ip, SWITCHNET_TOOLBOX_PORT); break;
+        case NET_ERR_TLS:       snprintf(why, sizeof(why), "Could not open a secure connection to %s:%d.", g_server_ip, SWITCHNET_TOOLBOX_PORT); break;
+        case NET_ERR_PROTO:     snprintf(why, sizeof(why), "The server's answer could not be read."); break;
+        case NET_ERR_NOT_READY: snprintf(why, sizeof(why), "The console's network services could not be started. Restart the Toolbox."); break;
+        case NET_ERR_OOM:       snprintf(why, sizeof(why), "Out of memory."); break;
+        default:
+            if (upd.error > 0) snprintf(why, sizeof(why), "The server answered HTTP %d.", upd.error);
+            else snprintf(why, sizeof(why), "Unknown network error (%d).", upd.error);
+        }
+        messageScreen(pad, "Could not check for updates", why);
+        return;
+    }
     if (!upd.available) {
-        messageScreen(pad, "Up to date", "You already have the latest version.");
+        char body[128];
+        snprintf(body, sizeof(body), "You have the latest version (%d.%d.%d).",
+                 SWITCHNET_VERSION_MAJOR, SWITCHNET_VERSION_MINOR, SWITCHNET_VERSION_PATCH);
+        messageScreen(pad, "Up to date", body);
         return;
     }
 
@@ -221,10 +239,10 @@ static void runServerStatusFlow(PadState *pad) {
         drawHeader();
         printf("Server status\n\n");
         if (res != STATUS_FETCH_OK) {
-            printf("Could not reach %s:%d. Check the IP and that SwitchNet is running.\n",
+            printf("Could not reach %s:%d. Check the IP and that GRID0+ is running.\n",
                    g_server_ip, SWITCHNET_TOOLBOX_PORT);
         } else if (count == 0) {
-            printf("SwitchNet answered, but reported no services.\n");
+            printf("GRID0+ answered, but reported no services.\n");
         } else {
             for (int i = 0; i < count; i++) {
                 printf("  %-12s %s%s%s\n", rows[i].name, rows[i].status,
@@ -254,6 +272,7 @@ int main(int argc, char **argv) {
     update_set_self_path((argc > 0 && argv) ? argv[0] : NULL);
 
     config_load();
+    net_init();
 
     consoleInit(NULL);
     romfsInit();   // keeps the cert stub files in romfs:/certs/ available
@@ -265,7 +284,7 @@ int main(int argc, char **argv) {
     // accounts.nintendo.com can lose that race and fail, silently, with
     // nothing in the applet to say why. This is exactly why apply_switchnet()
     // itself can't do the warmup: it reboots right after writing the hosts
-    // files, which throws away whatever it just warmed. So: if SwitchNet mode
+    // files, which throws away whatever it just warmed. So: if GRID0+ mode
     // is already active on THIS boot (i.e. we're not the one switching into
     // it right now), warm dns_mitm up ourselves, once, before the user can
     // reach anything that depends on it.
@@ -323,7 +342,7 @@ int main(int argc, char **argv) {
                     snprintf(body, sizeof(body),
                              "This will redirect Nintendo online traffic to %s and reboot the console. Continue?",
                              g_server_ip);
-                    if (confirmScreen(&pad, "Switch to SwitchNet", body)) {
+                    if (confirmScreen(&pad, "Switch to GRID0+", body)) {
                         bool ok = apply_switchnet(g_server_ip);
                         if (ok) {
                             consoleClear(); drawHeader();
@@ -340,7 +359,7 @@ int main(int argc, char **argv) {
                 }
                 case MENU_APPLY_DEFAULT: {
                     if (confirmScreen(&pad, "Switch to Default",
-                                       "This will remove SwitchNet's redirections (restoring your backup, "
+                                       "This will remove GRID0+'s redirections (restoring your backup, "
                                        "if any) and reboot the console. Continue?")) {
                         bool ok = apply_default();
                         if (ok) {
@@ -361,7 +380,7 @@ int main(int argc, char **argv) {
                     if (promptIpInput(ip, sizeof(ip))) {
                         if (isValidIPv4(ip)) {
                             config_set_server_ip(ip);
-                            snprintf(status, sizeof(status), "SwitchNet IP set to %s.", g_server_ip);
+                            snprintf(status, sizeof(status), "GRID0+ IP set to %s.", g_server_ip);
                         } else {
                             snprintf(status, sizeof(status), "\"%s\" is not a valid IPv4 address.", ip);
                         }
@@ -370,13 +389,13 @@ int main(int argc, char **argv) {
                 }
                 case MENU_RESET_IP:
                     config_set_server_ip(SWITCHNET_SERVER_IP_DEFAULT);
-                    snprintf(status, sizeof(status), "SwitchNet IP reset to default.");
+                    snprintf(status, sizeof(status), "GRID0+ IP reset to default.");
                     break;
                 case MENU_BACKUP_NOW: {
                     int n = backup_create();
                     snprintf(status, sizeof(status),
                              n > 0 ? "Backed up %d file(s) from /atmosphere/hosts."
-                                   : "Nothing to back up (folder empty, or already SwitchNet's own files).",
+                                   : "Nothing to back up (folder empty, or already GRID0+'s own files).",
                              n);
                     break;
                 }
@@ -402,6 +421,7 @@ done:
         threadWaitForExit(&s_dnsWarmupThread);
         threadClose(&s_dnsWarmupThread);
     }
+    net_exit();
     romfsExit();
     consoleExit(NULL);
     return 0;

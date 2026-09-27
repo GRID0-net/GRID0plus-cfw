@@ -1,4 +1,4 @@
-// SwitchNet Toolbox — version.
+// GRID0+ Toolbox — version.
 // Passed in from the Makefile (APP_VERSION) via -D flags; the values below are
 // only a fallback for an editor or an out-of-Makefile build, so they cannot
 // silently drift from what actually gets released.
@@ -12,7 +12,7 @@
 #define SWITCHNET_VERSION_MINOR 5
 #endif
 #ifndef SWITCHNET_VERSION_PATCH
-#define SWITCHNET_VERSION_PATCH 7
+#define SWITCHNET_VERSION_PATCH 8
 #endif
 
 #endif // SWITCHNET_VERSION_H

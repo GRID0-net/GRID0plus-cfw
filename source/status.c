@@ -37,15 +37,12 @@ static void copyJsonString(const char *src, char *dst, size_t cap) {
 StatusFetchResult status_fetch(StatusRow *rows, int *outCount) {
     *outCount = 0;
 
-    socketInitializeDefault();
-    if (R_FAILED(sslInitialize(4))) { socketExit(); return STATUS_FETCH_NET_FAIL; }
+    if (!net_ready()) return STATUS_FETCH_NET_FAIL;
 
     size_t len = 0;
     int status = 0;
     unsigned char *body = net_https_get(g_server_ip, SWITCHNET_TOOLBOX_PORT,
                                          TOOLBOX_STATUS_PATH, &len, &status);
-    sslExit();
-    socketExit();
 
     if (!body || status != 200) {
         free(body);

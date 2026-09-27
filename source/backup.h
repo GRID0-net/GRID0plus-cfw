@@ -1,6 +1,6 @@
-// SwitchNet Toolbox — backup/restore of the user's /atmosphere/hosts folder.
+// GRID0+ Toolbox — backup/restore of the user's /atmosphere/hosts folder.
 //
-// Applying SwitchNet mode overwrites sysmmc.txt/emummc.txt. Anyone who
+// Applying GRID0+ mode overwrites sysmmc.txt/emummc.txt. Anyone who
 // arrived with their own DNS-MITM redirections (a different community
 // server, their own blocklist, or files with other names entirely) would
 // otherwise lose them the first time the toolbox writes to that folder. This
@@ -16,12 +16,12 @@
 bool backup_exists(void);
 
 // Copies every regular file from /atmosphere/hosts into SWITCHNET_BACKUP_DIR,
-// skipping any file that already carries SwitchNet's own header mark (so a
+// skipping any file that already carries GRID0+'s own header mark (so a
 // backup never captures files this app wrote itself). Returns the number of
 // files copied (0 = nothing worth backing up, not an error).
 int backup_create(void);
 
-// Removes SwitchNet's own managed hosts files, then copies every file from
+// Removes GRID0+'s own managed hosts files, then copies every file from
 // SWITCHNET_BACKUP_DIR back into /atmosphere/hosts, overwriting. Returns the
 // number of files restored.
 int backup_restore(void);

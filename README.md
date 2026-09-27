@@ -1,20 +1,20 @@
-# SwitchNet Toolbox
+# GRID0+ Toolbox
 
 A small Nintendo Switch homebrew (`.nro`) that switches an Atmosphère console
-between the **SwitchNet** network and its **Default** (previous/original)
+between the **GRID0+** network and its **Default** (previous/original)
 hosts configuration — the same mechanism used by network-switcher homebrew
 like Prelude, without any bundled game mods.
 
 ```
-SwitchNet Toolbox  <VERSION>
+GRID0+ Toolbox  <VERSION>
 ========================================
 
 Current mode : DEFAULT
-SwitchNet IP : 89.168.58.206
+GRID0+ IP : 89.168.58.206
 
-> Switch to SwitchNet
+> Switch to GRID0+
   Switch to Default (restore original hosts)
-  Set custom SwitchNet IP
+  Set custom GRID0+ IP
   Reset IP to default (89.168.58.206)
   Back up hosts folder now
   Restore backup on Default mode: ON
@@ -25,30 +25,30 @@ SwitchNet IP : 89.168.58.206
 
 ## Features
 
-- **Mode switch.** *SwitchNet* mode redirects the usual Nintendo online
-  hostnames to a SwitchNet server and reboots so Atmosphère's DNS-MITM picks
+- **Mode switch.** *GRID0+* mode redirects the usual Nintendo online
+  hostnames to a GRID0+ server and reboots so Atmosphère's DNS-MITM picks
   it up; *Default* mode removes that redirection and reboots back.
-- **Full hosts backup.** Before SwitchNet mode ever writes to
+- **Full hosts backup.** Before GRID0+ mode ever writes to
   `/atmosphere/hosts` for the first time, every file already in that folder
   is copied to `sdmc:/switchnet/hosts_backup/` — not just the files this app
   manages, so a different community server's redirections or your own
   blocklist survive. "Back up hosts folder now" repeats this on demand, and
   "Switch to Default" restores it (toggle: "Restore backup on Default mode").
-- **Certificate provisioning (stubs for now).** SwitchNet's certificate
+- **Certificate provisioning (stubs for now).** GRID0+'s certificate
   material is copied into place alongside the hosts change. The actual
   certificate isn't included yet — see [Certificates](#certificates) below.
-- **On-demand auto-updater.** "Check for updates" asks SwitchNet's own
+- **On-demand auto-updater.** "Check for updates" asks GRID0+'s own
   toolbox API (not GitHub directly — this repo is private, so an
   unauthenticated request for its releases would just 404) whether a newer
   `.nro` is tagged, and if so downloads and installs it over the file you're
   currently running. It never phones home on its own — only when you press
   the button. See [Updates & server status](#updates--server-status) below.
 - **Server status.** Shows a coarse ok/degraded/down/unknown for each
-  SwitchNet service (dauth, aauth, baas, stubs, npln, dashboard, dns,
+  GRID0+ service (dauth, aauth, baas, stubs, npln, dashboard, dns,
   natcheck), from the same toolbox API. No error detail, no credential
-  needed — just enough to tell "SwitchNet is down" from "my own network is
+  needed — just enough to tell "GRID0+ is down" from "my own network is
   the problem".
-- **IP override.** "Set custom SwitchNet IP" opens the on-screen keyboard to
+- **IP override.** "Set custom GRID0+ IP" opens the on-screen keyboard to
   point at a different server (e.g. a local instance for debugging); "Reset
   IP to default" goes back to `89.168.58.206`. Both the updater and the
   status screen follow this same address.
@@ -70,18 +70,18 @@ read at boot/launch, everything is reversible by switching modes or deleting
 
 The generated hosts file redirects the common Nintendo online endpoints
 (accounts, `*.srv.nintendo.net`, the NEX secure-server wildcard, the browser
-connectivity check) to the configured SwitchNet IP, and null-routes
+connectivity check) to the configured GRID0+ IP, and null-routes
 telemetry in both modes. It does not contain per-game server IDs or bundled
-mods — extend `source/hosts.c` (`hosts_build`) as SwitchNet's own
+mods — extend `source/hosts.c` (`hosts_build`) as GRID0+'s own
 infrastructure grows.
 
 ## Certificates & certificate trust
 
 `romfs/sd/` is a mirror of the SD card root: everything under it gets copied
-onto the SD card, at the same relative path, when SwitchNet mode is applied
+onto the SD card, at the same relative path, when GRID0+ mode is applied
 (and removed again in Default mode). It currently contains:
 
-- **SwitchNet's actual root CA** (`CN=SwitchNet Local CA`, embedded at build
+- **GRID0+'s actual root CA** (`CN=GRID0+ Local CA`, embedded at build
   time) at `switchnet/certs/switchnet_root_ca.pem`, `rootCA.pem`, and the
   console's browser-applet CA bundle under
   `atmosphere/contents/0100000000000803/romfs/browser/`.
@@ -110,14 +110,14 @@ credential permanently extractable from every copy in the field (`strings`
 on the binary is all it takes). So the app never talks to GitHub at all:
 
 ```
-Console  ──GET /updates/latest──►  SwitchNet's toolbox API  ──(token)──►  GitHub
+Console  ──GET /updates/latest──►  GRID0+'s toolbox API  ──(token)──►  GitHub
 Console  ◄──tag/url/size──────────         (same shape a real GitHub response has)
 Console  ──GET /updates/download──►  toolbox API  ──(token)──►  GitHub release asset
 ```
 
 `source/net.c`/`source/update.c` reach this at `g_server_ip` (the same
 address/override the hosts screen uses) on `SWITCHNET_TOOLBOX_PORT` (8443,
-`source/config.h`) — a dedicated port on the SwitchNet server's nginx edge,
+`source/config.h`) — a dedicated port on the GRID0+ server's nginx edge,
 not a redirected Nintendo hostname, so no DNS entry is needed for it. The
 "Server status" screen (`source/status.c`) talks to the same host/port,
 `/status` instead of `/updates/*`.

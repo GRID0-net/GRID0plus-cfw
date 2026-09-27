@@ -1,4 +1,4 @@
-// SwitchNet Toolbox — app configuration and persisted settings.
+// GRID0+ Toolbox — app configuration and persisted settings.
 //
 // Everything the app reads or writes on the SD card outside of Atmosphere's own
 // folders lives under SWITCHNET_DIR, so uninstalling is "delete two folders":
@@ -8,7 +8,7 @@
 
 #include <stdbool.h>
 
-// Default SwitchNet server IP. Overridden at runtime via the in-app IP field
+// Default GRID0+ server IP. Overridden at runtime via the in-app IP field
 // (Set custom SwitchNet IP), persisted in SWITCHNET_CONFIG_FILE.
 #define SWITCHNET_SERVER_IP_DEFAULT "89.168.58.206"
 // The Azure address the server had before moving to GRID0 (Oracle, 2026-09-27).
@@ -23,7 +23,7 @@
 // Currently selected server IP (default, or the override once loaded).
 extern char g_server_ip[SWITCHNET_SERVER_IP_MAX];
 
-// SwitchNet's own toolbox API (server status, update checks) is reached by
+// GRID0+'s own toolbox API (server status, update checks) is reached by
 // IP on this fixed port — never by a redirected Nintendo hostname, and
 // never DNS-resolved: it is the same g_server_ip the hosts file points
 // games at, just a different port on the nginx edge (see

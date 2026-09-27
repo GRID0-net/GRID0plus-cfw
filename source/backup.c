@@ -68,7 +68,7 @@ int backup_create(void) {
         struct stat st;
         if (stat(src, &st) != 0 || S_ISDIR(st.st_mode)) continue;
         // Never back up a file we generated ourselves: it would let a
-        // SwitchNet redirection quietly come back through "restore".
+        // GRID0+ redirection quietly come back through "restore".
         if (fileContains(src, SWITCHNET_HOSTS_HEADER_MARK)) continue;
 
         if (copyFileRaw(src, dst)) n++;
@@ -86,7 +86,7 @@ int backup_restore(void) {
     if (!switchnet_ensure_dir(SWITCHNET_HOSTS_DIR)) return 0;
 
     // Drop our own redirections first so restored files aren't shadowed by a
-    // "last matching line wins" entry left over from SwitchNet mode.
+    // "last matching line wins" entry left over from GRID0+ mode.
     hosts_clear_own();
 
     DIR *d = opendir(SWITCHNET_BACKUP_DIR);
