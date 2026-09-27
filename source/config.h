@@ -10,11 +10,14 @@
 
 // Default SwitchNet server IP. Overridden at runtime via the in-app IP field
 // (Set custom SwitchNet IP), persisted in SWITCHNET_CONFIG_FILE.
-#define SWITCHNET_SERVER_IP_DEFAULT "9.205.104.23"
+#define SWITCHNET_SERVER_IP_DEFAULT "89.168.58.206"
+// The Azure address the server had before moving to GRID0 (Oracle, 2026-09-27).
+// A saved config still naming it is moved to the new default on load.
+#define SWITCHNET_SERVER_IP_PREVIOUS "9.205.104.23"
 // The default server's second public address, for Pia's NAT check: nncs2
 // must answer from a different IP than nncs1, or the console de-duplicates
 // the probe and NAT detection never completes.
-#define SWITCHNET_NATCHECK_SECONDARY_IP_DEFAULT "9.205.153.111"
+#define SWITCHNET_NATCHECK_SECONDARY_IP_DEFAULT "145.241.167.178"
 #define SWITCHNET_SERVER_IP_MAX 64
 
 // Currently selected server IP (default, or the override once loaded).

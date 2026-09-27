@@ -133,7 +133,7 @@ static bool promptIpInput(char *out, size_t cap) {
 
     swkbdConfigMakePresetDefault(&kbd);
     swkbdConfigSetInitialText(&kbd, g_server_ip);
-    swkbdConfigSetGuideText(&kbd, "SwitchNet server IP, e.g. 9.205.104.23");
+    swkbdConfigSetGuideText(&kbd, "SwitchNet server IP, e.g. 89.168.58.206");
     swkbdConfigSetStringLenMax(&kbd, (int)cap - 1);
 
     char buf[64] = {0};

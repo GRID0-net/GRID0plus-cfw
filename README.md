@@ -10,12 +10,12 @@ SwitchNet Toolbox  <VERSION>
 ========================================
 
 Current mode : DEFAULT
-SwitchNet IP : 9.205.104.23
+SwitchNet IP : 89.168.58.206
 
 > Switch to SwitchNet
   Switch to Default (restore original hosts)
   Set custom SwitchNet IP
-  Reset IP to default (9.205.104.23)
+  Reset IP to default (89.168.58.206)
   Back up hosts folder now
   Restore backup on Default mode: ON
   Check for updates
@@ -50,7 +50,7 @@ SwitchNet IP : 9.205.104.23
   the problem".
 - **IP override.** "Set custom SwitchNet IP" opens the on-screen keyboard to
   point at a different server (e.g. a local instance for debugging); "Reset
-  IP to default" goes back to `9.205.104.23`. Both the updater and the
+  IP to default" goes back to `89.168.58.206`. Both the updater and the
   status screen follow this same address.
 
 ## How it works

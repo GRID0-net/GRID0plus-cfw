@@ -70,6 +70,7 @@ void config_load(void) {
         const char *val = eq + 1;
 
         if (strcmp(key, "server_ip") == 0 && val[0]) {
+            if (strcmp(val, SWITCHNET_SERVER_IP_PREVIOUS) == 0) val = SWITCHNET_SERVER_IP_DEFAULT;
             strncpy(g_server_ip, val, sizeof(g_server_ip) - 1);
             g_server_ip[sizeof(g_server_ip) - 1] = '\0';
         } else if (strcmp(key, "backup_done") == 0) {
