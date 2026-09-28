@@ -96,6 +96,21 @@ onto the SD card, at the same relative path, when GRID0+ mode is applied
   account linking) generally means. Atmosphère only applies the patch whose
   filename matches the running firmware's build ID, so shipping patches for
   every supported firmware is harmless.
+- **`bcat_signature_bypass`** — one patch, for the `bcat` sysmodule build
+  `6D9772A7…` that firmware **22.5.0** ships. It replaces the boolean BCAT
+  stores from its central RSA verification callback — that callback's own
+  result — with a constant true, which is what lets the console accept the
+  delivery-cache response GRID0+ signs itself rather than refusing content
+  Nintendo's key never touched. Unlike the two sets above this one is not
+  from upstream: it is GRID0+'s own patch, for this one build, out of the
+  operator's own dump, and it neither creates nor impersonates a Nintendo
+  signature. A firmware update needs a new one — the build ID then doesn't
+  match, so Atmosphère applies nothing and BCAT falls back to the 304
+  answers. It only matters if the console actually reaches GRID0+ for the
+  three `bcat-*` CDN hosts, which this app's hosts file already routes
+  there; the server side (real delivery-cache files under `bcat.seed_dir`,
+  or it keeps answering 304) is written up in GRID0+'s
+  `internal/bcat/README.md`.
 
 To rotate the certificate later: replace the PEM files under `romfs/sd/`
 with the new root CA, bump `APP_VERSION`, and push to `main` — CI builds and
