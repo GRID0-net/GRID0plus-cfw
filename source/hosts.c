@@ -80,8 +80,10 @@ char *hosts_build(const char *ip) {
     sb_appendf(&sb, "%s api.accounts.nintendo.com\n", ip);
     sb_appendf(&sb, "%s    *.srv.nintendo.net\n", ip);
     sb_appendf(&sb, "%s    *srv.nintendo.net\n", ip);
-    // Covers every game's NEX secure server without hardcoding per-game IDs.
+    // Some Atmosphere hosts parsers do not match a wildcard inside a label.
+    // Splatoon 2 must therefore have an exact NEX hostname as well.
     sb_appendf(&sb, "%s g2*.s.n.srv.nintendo.net\n", ip);
+    sb_appendf(&sb, "%s g2df33d01-lp1.s.n.srv.nintendo.net\n", ip);
 
     // These seven are all real, active GRID0+ endpoints (friend
     // recommendations, invitations, NSO membership, eLicense, eShop's
