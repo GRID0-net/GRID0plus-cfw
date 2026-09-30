@@ -23,7 +23,7 @@ APP_TITLE   := GRID0+ Toolbox
 APP_AUTHOR  := GRID0+
 # Keep in lockstep with source/version.h (SWITCHNET_VERSION_*) and the GitHub
 # release tag (vX.Y.Z) — the updater compares this against GitHub releases.
-APP_VERSION := 0.5.10
+APP_VERSION := 0.5.11
 APP_ICON    := icon.jpg
 
 #---------------------------------------------------------------------------------

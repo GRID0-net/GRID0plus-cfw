@@ -84,6 +84,9 @@ char *hosts_build(const char *ip) {
     // Splatoon 2 must therefore have an exact NEX hostname as well.
     sb_appendf(&sb, "%s g2*.s.n.srv.nintendo.net\n", ip);
     sb_appendf(&sb, "%s g2df33d01-lp1.s.n.srv.nintendo.net\n", ip);
+    // Pia probes these as distinct servers; an exact nncs1 rule avoids a
+    // broad wildcard failing to resolve the primary endpoint.
+    sb_appendf(&sb, "%s nncs1-lp1.n.n.srv.nintendo.net\n", ip);
 
     // These seven are all real, active GRID0+ endpoints (friend
     // recommendations, invitations, NSO membership, eLicense, eShop's
@@ -186,6 +189,7 @@ char *hosts_build(const char *ip) {
     if (strcmp(ip, SWITCHNET_SERVER_IP_DEFAULT) == 0) {
         sb_append(&sb, "\n# --- Pia NAT check: nncs2 needs its own IP ---\n");
         sb_append(&sb, SWITCHNET_NATCHECK_SECONDARY_IP_DEFAULT " nncs2-%.n.n.srv.nintendo.net\n");
+        sb_append(&sb, SWITCHNET_NATCHECK_SECONDARY_IP_DEFAULT " nncs2-lp1.n.n.srv.nintendo.net\n");
     }
 
     sb_append(&sb, "\n# --- Browser connectivity check -> GRID0+ ---\n");
