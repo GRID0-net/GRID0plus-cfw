@@ -6,15 +6,15 @@
 
 #include <stdio.h>
 
-SwitchnetMode apply_current_mode(void) {
-    return hosts_is_switchnet_active() ? SWITCHNET_MODE_SWITCHNET : SWITCHNET_MODE_DEFAULT;
+Grid0plusMode apply_current_mode(void) {
+    return hosts_is_grid0plus_active() ? GRID0PLUS_MODE_GRID0PLUS : GRID0PLUS_MODE_DEFAULT;
 }
 
-bool apply_switchnet(const char *ip) {
-    switchnet_trace("apply_switchnet: start");
+bool apply_grid0plus(const char *ip) {
+    grid0plus_trace("apply_grid0plus: start");
 
-    if (!switchnet_ensure_dir(SWITCHNET_HOSTS_DIR)) {
-        switchnet_trace("apply_switchnet: could not create hosts dir");
+    if (!grid0plus_ensure_dir(GRID0PLUS_HOSTS_DIR)) {
+        grid0plus_trace("apply_grid0plus: could not create hosts dir");
         return false;
     }
 
@@ -40,12 +40,12 @@ bool apply_switchnet(const char *ip) {
     bool prodinfoOk = hosts_set_blank_prodinfo_emummc(false);
 
     fsdevCommitDevice("sdmc");
-    switchnet_trace((hostsOk && iniOk && prodinfoOk) ? "apply_switchnet: done" : "apply_switchnet: FAILED");
+    grid0plus_trace((hostsOk && iniOk && prodinfoOk) ? "apply_grid0plus: done" : "apply_grid0plus: FAILED");
     return hostsOk && iniOk && certsOk && prodinfoOk;
 }
 
 bool apply_default(void) {
-    switchnet_trace("apply_default: start");
+    grid0plus_trace("apply_default: start");
 
     hosts_clear_own();
 
@@ -56,11 +56,11 @@ bool apply_default(void) {
     certs_remove();
 
     // If our redirections are really gone, keep DNS-MITM on with Atmosphère's
-    // own defaults merged in — that's strictly more private than turning
+    // own defaults merged in, that's strictly more private than turning
     // DNS-MITM off outright, and it's what a stock Atmosphère install does.
     // Fall back to disabling DNS-MITM only if our hosts somehow survived the
     // removal above, so Default mode is never silently still redirected.
-    bool hostsGone = !hosts_is_switchnet_active();
+    bool hostsGone = !hosts_is_grid0plus_active();
     bool iniOk = hostsGone ? hosts_set_dns_mitm(true, true) : hosts_set_dns_mitm(false, false);
     // true: blank this emuMMC's PRODINFO again. The anti-ban reasoning is the
     // same as returning to real Nintendo -- this console's real device
@@ -69,11 +69,11 @@ bool apply_default(void) {
     bool prodinfoOk = hosts_set_blank_prodinfo_emummc(true);
 
     fsdevCommitDevice("sdmc");
-    switchnet_trace((iniOk && prodinfoOk) ? "apply_default: done" : "apply_default: FAILED");
+    grid0plus_trace((iniOk && prodinfoOk) ? "apply_default: done" : "apply_default: FAILED");
     return iniOk && prodinfoOk;
 }
 
-Result switchnet_reboot(void) {
+Result grid0plus_reboot(void) {
     Result rc = bpcInitialize();
     if (R_FAILED(rc)) return rc;
     rc = bpcRebootSystem();

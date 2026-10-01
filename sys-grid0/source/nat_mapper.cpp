@@ -185,7 +185,7 @@ namespace ztnx {
 bool StartNatMapper(uint64_t node_id) {
     if (started) return true;
     if (!ConfigFlag("port_mapping", true)) return false;
-    std::snprintf(description, sizeof(description), "sys-zerotier-%010llx", (unsigned long long)node_id);
+    std::snprintf(description, sizeof(description), "sys-GRID+-%010llx", (unsigned long long)node_id);
     const auto rc = ams::os::CreateThread(&worker, Main, nullptr, stack, sizeof(stack),
                                         ams::os::DefaultThreadPriority + 5);
     if (R_FAILED(rc)) { Event("NAT worker unavailable rc %x", rc.GetValue()); return false; }

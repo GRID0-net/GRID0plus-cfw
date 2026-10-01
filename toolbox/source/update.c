@@ -11,16 +11,16 @@
 #include <sys/stat.h>
 #include <switch.h>
 
-// switchnet-nro's source is a private repository, so an unauthenticated
+// grid0plus-nro's source is a private repository, so an unauthenticated
 // request for its releases from the console would get a 404. GRID0+'s own
 // toolbox API holds the GitHub credential instead and answers the same
-// tag_name/browser_download_url/size shape a real GitHub response would —
-// see switchnet's internal/toolbox package. The console never sees, and
+// tag_name/browser_download_url/size shape a real GitHub response would ,
+// see grid0plus's internal/toolbox package. The console never sees, and
 // never needs, a GitHub token of its own.
 #define TOOLBOX_UPDATES_PATH "/updates/latest"
 
-#define LEGACY_NRO_FILE "sdmc:/switch/switchnet.nro"
-#define LEGACY_TMP_FILE "sdmc:/switch/switchnet.nro.new"
+#define LEGACY_NRO_FILE "sdmc:/switch/grid0plus.nro"
+#define LEGACY_TMP_FILE "sdmc:/switch/grid0plus.nro.new"
 
 static char s_selfNro[512] = {0};
 static char s_selfTmp[520] = {0};
@@ -51,12 +51,12 @@ static const char *selfTmpPath(void) { return s_selfTmp[0] ? s_selfTmp : LEGACY_
 static char s_downloadUrl[512] = {0};
 static long s_downloadSize = 0;
 
-static SwitchnetUpdateProgressFn s_progressCb = NULL;
+static Grid0plusUpdateProgressFn s_progressCb = NULL;
 static long s_progressTotal = 0;
 
 static void progressRelay(long received, long total) {
     if (total <= 0) total = s_progressTotal;
-    if (s_progressCb) s_progressCb(SWITCHNET_UPDATE_PHASE_DOWNLOAD, received, total);
+    if (s_progressCb) s_progressCb(GRID0PLUS_UPDATE_PHASE_DOWNLOAD, received, total);
 }
 
 // Finds a JSON string value for `key` (e.g. "\"tag_name\""), tolerating
@@ -105,8 +105,8 @@ static int semverCompare(int amaj, int amin, int apatch, int bmaj, int bmin, int
     return apatch - bpatch;
 }
 
-SwitchnetUpdate update_check(void) {
-    SwitchnetUpdate u = { false, 0, 0, 0, 0, 0 };
+Grid0plusUpdate update_check(void) {
+    Grid0plusUpdate u = { false, 0, 0, 0, 0, 0 };
 
     if (!net_ready()) { u.error = NET_ERR_NOT_READY; return u; }
 
@@ -115,7 +115,7 @@ SwitchnetUpdate update_check(void) {
     unsigned char *body = NULL;
     // One retry: the first request after launch can race DNS/network bring-up.
     for (int attempt = 0; attempt < 2 && !body; attempt++) {
-        body = net_https_get(g_server_ip, SWITCHNET_TOOLBOX_PORT, TOOLBOX_UPDATES_PATH, &len, &status);
+        body = net_https_get(g_server_ip, GRID0PLUS_TOOLBOX_PORT, TOOLBOX_UPDATES_PATH, &len, &status);
         if (!body && attempt == 0) svcSleepThread(1000000000ULL);
     }
     if (!body || status != 200) {
@@ -136,8 +136,8 @@ SwitchnetUpdate update_check(void) {
         u.error = NET_ERR_PROTO;
     } else {
         u.maj = maj; u.min = min; u.patch = patch;
-        if (semverCompare(maj, min, patch, SWITCHNET_VERSION_MAJOR, SWITCHNET_VERSION_MINOR,
-                          SWITCHNET_VERSION_PATCH) > 0) {
+        if (semverCompare(maj, min, patch, GRID0PLUS_VERSION_MAJOR, GRID0PLUS_VERSION_MINOR,
+                          GRID0PLUS_VERSION_PATCH) > 0) {
             if (sz > 4096) {
                 u.available = true;
                 u.size = sz;
@@ -156,7 +156,7 @@ SwitchnetUpdate update_check(void) {
 static bool copyOver(const char *src, const char *dst) {
     FILE *in = fopen(src, "rb");
     if (!in) return false;
-    if (s_progressCb) s_progressCb(SWITCHNET_UPDATE_PHASE_INSTALL, 0, s_progressTotal);
+    if (s_progressCb) s_progressCb(GRID0PLUS_UPDATE_PHASE_INSTALL, 0, s_progressTotal);
     FILE *out = fopen(dst, "wb");
     if (!out) { int e = errno; fclose(in); errno = e; return false; }
 
@@ -168,7 +168,7 @@ static bool copyOver(const char *src, const char *dst) {
     while ((n = fread(buf, 1, sizeof(buf), in)) > 0) {
         if (fwrite(buf, 1, n, out) != n) { err = errno; ok = false; break; }
         copied += (long)n;
-        if (s_progressCb) s_progressCb(SWITCHNET_UPDATE_PHASE_INSTALL, copied, s_progressTotal);
+        if (s_progressCb) s_progressCb(GRID0PLUS_UPDATE_PHASE_INSTALL, copied, s_progressTotal);
     }
     fclose(in);
     if (fclose(out) != 0) { if (ok) err = errno; ok = false; }
@@ -176,8 +176,8 @@ static bool copyOver(const char *src, const char *dst) {
     return ok;
 }
 
-SwitchnetUpdateResult update_apply(long expectedSize, SwitchnetUpdateProgressFn onProgress) {
-    if (s_downloadUrl[0] == '\0') return SWITCHNET_UPDATE_NET_FAIL;
+Grid0plusUpdateResult update_apply(long expectedSize, Grid0plusUpdateProgressFn onProgress) {
+    if (s_downloadUrl[0] == '\0') return GRID0PLUS_UPDATE_NET_FAIL;
     long expected = expectedSize > 0 ? expectedSize : s_downloadSize;
 
     s_progressCb = onProgress;
@@ -188,14 +188,14 @@ SwitchnetUpdateResult update_apply(long expectedSize, SwitchnetUpdateProgressFn 
         mkdir("sdmc:/switch", 0777);
         f = fopen(selfTmpPath(), "wb");
     }
-    if (!f) { switchnet_trace("update: could not create .new file"); return SWITCHNET_UPDATE_WRITE_FAIL; }
+    if (!f) { grid0plus_trace("update: could not create .new file"); return GRID0PLUS_UPDATE_WRITE_FAIL; }
 
-    if (!net_ready()) { fclose(f); return SWITCHNET_UPDATE_NET_FAIL; }
+    if (!net_ready()) { fclose(f); return GRID0PLUS_UPDATE_NET_FAIL; }
 
     char hostPort[256] = {0}, path[1024] = {0};
     if (sscanf(s_downloadUrl, "https://%255[^/]%1023s", hostPort, path) < 2) {
         fclose(f); remove(selfTmpPath());
-        return SWITCHNET_UPDATE_NET_FAIL;
+        return GRID0PLUS_UPDATE_NET_FAIL;
     }
     // The toolbox relay's download URL names its own port explicitly
     // (":8443"); a bare host defaults to 443 for anything that doesn't.
@@ -217,19 +217,19 @@ SwitchnetUpdateResult update_apply(long expectedSize, SwitchnetUpdateProgressFn 
     long len = net_https_get_to_file(host, port, path, f, &status, onProgress ? progressRelay : NULL);
     fclose(f);
 
-    if (len == -2) { switchnet_trace("update: write to .new interrupted (SD full?)"); remove(selfTmpPath()); return SWITCHNET_UPDATE_WRITE_FAIL; }
-    if (len < 0)   { remove(selfTmpPath()); return SWITCHNET_UPDATE_NET_FAIL; }
-    if (status != 200 || len < 4096) { remove(selfTmpPath()); return SWITCHNET_UPDATE_NET_FAIL; }
-    if (expected > 0 && len != expected) { remove(selfTmpPath()); return SWITCHNET_UPDATE_SIZE_FAIL; }
+    if (len == -2) { grid0plus_trace("update: write to .new interrupted (SD full?)"); remove(selfTmpPath()); return GRID0PLUS_UPDATE_WRITE_FAIL; }
+    if (len < 0)   { remove(selfTmpPath()); return GRID0PLUS_UPDATE_NET_FAIL; }
+    if (status != 200 || len < 4096) { remove(selfTmpPath()); return GRID0PLUS_UPDATE_NET_FAIL; }
+    if (expected > 0 && len != expected) { remove(selfTmpPath()); return GRID0PLUS_UPDATE_SIZE_FAIL; }
     fsdevCommitDevice("sdmc");
 
     // romfsInit() keeps an FS handle open on the .nro this app is running
     // from for as long as the session lives (romfs contents are read on
-    // demand — the cert stub files, in our case). That's exactly the file
+    // demand, the cert stub files, in our case). That's exactly the file
     // the update needs to replace, so it has to be released first or every
     // attempt below fails no matter what the SD card allows.
     romfsExit();
-    switchnet_trace("update: romfs released for replacement");
+    grid0plus_trace("update: romfs released for replacement");
 
     bool placed = false;
 
@@ -237,7 +237,7 @@ SwitchnetUpdateResult update_apply(long expectedSize, SwitchnetUpdateProgressFn 
     if (copyOver(selfTmpPath(), selfNroPath())) {
         placed = true;
         remove(selfTmpPath());
-        switchnet_trace("update: replaced in place");
+        grid0plus_trace("update: replaced in place");
     }
 
     // 2) remove + rename.
@@ -245,11 +245,11 @@ SwitchnetUpdateResult update_apply(long expectedSize, SwitchnetUpdateProgressFn 
         remove(selfNroPath());
         if (rename(selfTmpPath(), selfNroPath()) == 0) {
             placed = true;
-            switchnet_trace("update: replaced via rename");
+            grid0plus_trace("update: replaced via rename");
         } else if (copyOver(selfTmpPath(), selfNroPath())) {
             placed = true;
             remove(selfTmpPath());
-            switchnet_trace("update: replaced via copy after remove");
+            grid0plus_trace("update: replaced via copy after remove");
         }
     }
 
@@ -260,15 +260,15 @@ SwitchnetUpdateResult update_apply(long expectedSize, SwitchnetUpdateProgressFn 
         if (copyOver(selfTmpPath(), LEGACY_NRO_FILE)) {
             placed = true;
             remove(selfTmpPath());
-            switchnet_trace("update: WARN target locked, wrote to switch/switchnet.nro instead");
+            grid0plus_trace("update: WARN target locked, wrote to switch/grid0plus.nro instead");
         }
     }
 
     if (!placed) {
         remove(selfTmpPath());
-        switchnet_trace("update: ERROR could not write the update anywhere");
+        grid0plus_trace("update: ERROR could not write the update anywhere");
         romfsInit();
-        return SWITCHNET_UPDATE_WRITE_FAIL;
+        return GRID0PLUS_UPDATE_WRITE_FAIL;
     }
 
     romfsInit();
@@ -281,5 +281,5 @@ SwitchnetUpdateResult update_apply(long expectedSize, SwitchnetUpdateProgressFn 
     }
 
     fsdevCommitDevice("sdmc");
-    return SWITCHNET_UPDATE_OK;
+    return GRID0PLUS_UPDATE_OK;
 }

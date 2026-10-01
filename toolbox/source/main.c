@@ -1,6 +1,6 @@
-// GRID0+ Toolbox — entry point and menu.
+// GRID0+ Toolbox, entry point and menu.
 //
-// A small text menu (no custom graphics — this app only needs to be
+// A small text menu (no custom graphics, this app only needs to be
 // readable, not pretty):
 //
 //   Switch to GRID0+
@@ -14,7 +14,7 @@
 //   Exit
 //
 // Switching modes writes Atmosphère's DNS-MITM hosts files and reboots (the
-// hosts files are only read at boot). Update checks are on demand — this app
+// hosts files are only read at boot). Update checks are on demand, this app
 // never phones home unless the user presses the button for it.
 #include <stdio.h>
 #include <string.h>
@@ -31,7 +31,7 @@
 #include "version.h"
 
 enum {
-    MENU_APPLY_SWITCHNET,
+    MENU_APPLY_GRID0PLUS,
     MENU_APPLY_DEFAULT,
     MENU_SET_IP,
     MENU_RESET_IP,
@@ -45,10 +45,10 @@ enum {
 
 static const char *menuLabel(int i, char *buf, size_t cap) {
     switch (i) {
-        case MENU_APPLY_SWITCHNET: return "Switch to GRID0+";
+        case MENU_APPLY_GRID0PLUS: return "Switch to GRID0+";
         case MENU_APPLY_DEFAULT:   return "Switch to Default (restore original hosts)";
         case MENU_SET_IP:          return "Set custom GRID0+ IP";
-        case MENU_RESET_IP:        return "Reset IP to default (" SWITCHNET_SERVER_IP_DEFAULT ")";
+        case MENU_RESET_IP:        return "Reset IP to default (" GRID0PLUS_SERVER_IP_DEFAULT ")";
         case MENU_BACKUP_NOW:      return "Back up hosts folder now";
         case MENU_TOGGLE_RESTORE:
             snprintf(buf, cap, "Restore backup on Default mode: %s",
@@ -62,17 +62,17 @@ static const char *menuLabel(int i, char *buf, size_t cap) {
 }
 
 static void drawHeader(void) {
-    // While the major version is 0 this project is still in beta — say so
+    // While the major version is 0 this project is still in beta, say so
     // plainly instead of implying a 1.0-grade release.
-    if (SWITCHNET_VERSION_MAJOR == 0)
+    if (GRID0PLUS_VERSION_MAJOR == 0)
         printf("GRID0+ Toolbox  beta-%d.%d.%d\n",
-               SWITCHNET_VERSION_MAJOR, SWITCHNET_VERSION_MINOR, SWITCHNET_VERSION_PATCH);
+               GRID0PLUS_VERSION_MAJOR, GRID0PLUS_VERSION_MINOR, GRID0PLUS_VERSION_PATCH);
     else
         printf("GRID0+ Toolbox  v%d.%d.%d\n",
-               SWITCHNET_VERSION_MAJOR, SWITCHNET_VERSION_MINOR, SWITCHNET_VERSION_PATCH);
+               GRID0PLUS_VERSION_MAJOR, GRID0PLUS_VERSION_MINOR, GRID0PLUS_VERSION_PATCH);
     printf("========================================\n\n");
     printf("Current mode : %s\n",
-           apply_current_mode() == SWITCHNET_MODE_SWITCHNET ? "SWITCHNET" : "DEFAULT");
+           apply_current_mode() == GRID0PLUS_MODE_GRID0PLUS ? "GRID0+" : "DEFAULT");
     printf("GRID0+ IP : %s\n\n", g_server_ip);
 }
 
@@ -147,7 +147,7 @@ static bool promptIpInput(char *out, size_t cap) {
 
 static int s_updLastPct = -1;
 
-static void updateProgressCb(SwitchnetUpdatePhase phase, long done, long total) {
+static void updateProgressCb(Grid0plusUpdatePhase phase, long done, long total) {
     int pct = (total > 0) ? (int)((done * 100) / total) : 0;
     if (pct > 100) pct = 100;
     if (pct == s_updLastPct) return;
@@ -155,7 +155,7 @@ static void updateProgressCb(SwitchnetUpdatePhase phase, long done, long total) 
 
     consoleClear();
     drawHeader();
-    printf("%s...\n\n", phase == SWITCHNET_UPDATE_PHASE_INSTALL ? "Installing update" : "Downloading update");
+    printf("%s...\n\n", phase == GRID0PLUS_UPDATE_PHASE_INSTALL ? "Installing update" : "Downloading update");
     if (total > 0)
         printf("%d%%  (%ld / %ld KiB)\n", pct, done / 1024, total / 1024);
     else
@@ -169,13 +169,13 @@ static void runUpdateFlow(PadState *pad) {
     printf("Checking for updates...\n");
     consoleUpdate(NULL);
 
-    SwitchnetUpdate upd = update_check();
+    Grid0plusUpdate upd = update_check();
 
     if (upd.error != 0) {
         char why[200];
         switch (upd.error) {
-        case NET_ERR_CONNECT:   snprintf(why, sizeof(why), "Could not connect to %s:%d. Check the server IP and your internet connection.", g_server_ip, SWITCHNET_TOOLBOX_PORT); break;
-        case NET_ERR_TLS:       snprintf(why, sizeof(why), "Could not open a secure connection to %s:%d.", g_server_ip, SWITCHNET_TOOLBOX_PORT); break;
+        case NET_ERR_CONNECT:   snprintf(why, sizeof(why), "Could not connect to %s:%d. Check the server IP and your internet connection.", g_server_ip, GRID0PLUS_TOOLBOX_PORT); break;
+        case NET_ERR_TLS:       snprintf(why, sizeof(why), "Could not open a secure connection to %s:%d.", g_server_ip, GRID0PLUS_TOOLBOX_PORT); break;
         case NET_ERR_PROTO:     snprintf(why, sizeof(why), "The server's answer could not be read."); break;
         case NET_ERR_NOT_READY: snprintf(why, sizeof(why), "The console's network services could not be started. Restart the Toolbox."); break;
         case NET_ERR_OOM:       snprintf(why, sizeof(why), "Out of memory."); break;
@@ -189,7 +189,7 @@ static void runUpdateFlow(PadState *pad) {
     if (!upd.available) {
         char body[128];
         snprintf(body, sizeof(body), "You have the latest version (%d.%d.%d).",
-                 SWITCHNET_VERSION_MAJOR, SWITCHNET_VERSION_MINOR, SWITCHNET_VERSION_PATCH);
+                 GRID0PLUS_VERSION_MAJOR, GRID0PLUS_VERSION_MINOR, GRID0PLUS_VERSION_PATCH);
         messageScreen(pad, "Up to date", body);
         return;
     }
@@ -200,17 +200,17 @@ static void runUpdateFlow(PadState *pad) {
     if (!confirmScreen(pad, "Update available", body)) return;
 
     s_updLastPct = -1;
-    SwitchnetUpdateResult res = update_apply(upd.size, updateProgressCb);
+    Grid0plusUpdateResult res = update_apply(upd.size, updateProgressCb);
 
     switch (res) {
-        case SWITCHNET_UPDATE_OK:
+        case GRID0PLUS_UPDATE_OK:
             messageScreen(pad, "Update installed",
                           "Close this app and relaunch it to run the new version.");
             break;
-        case SWITCHNET_UPDATE_SIZE_FAIL:
+        case GRID0PLUS_UPDATE_SIZE_FAIL:
             messageScreen(pad, "Update failed", "Downloaded file size did not match. Try again.");
             break;
-        case SWITCHNET_UPDATE_WRITE_FAIL:
+        case GRID0PLUS_UPDATE_WRITE_FAIL:
             messageScreen(pad, "Update failed", "Could not write to the SD card.");
             break;
         default:
@@ -240,7 +240,7 @@ static void runServerStatusFlow(PadState *pad) {
         printf("Server status\n\n");
         if (res != STATUS_FETCH_OK) {
             printf("Could not reach %s:%d. Check the IP and that GRID0+ is running.\n",
-                   g_server_ip, SWITCHNET_TOOLBOX_PORT);
+                   g_server_ip, GRID0PLUS_TOOLBOX_PORT);
         } else if (count == 0) {
             printf("GRID0+ answered, but reported no services.\n");
         } else {
@@ -267,7 +267,7 @@ static void dnsWarmupWorker(void *arg) {
 }
 
 int main(int argc, char **argv) {
-    // hbmenu passes the running .nro's real path in argv[0] — the updater
+    // hbmenu passes the running .nro's real path in argv[0], the updater
     // needs it to replace the correct file (not just a fixed default path).
     update_set_self_path((argc > 0 && argv) ? argv[0] : NULL);
 
@@ -282,7 +282,7 @@ int main(int argc, char **argv) {
     // state does not survive a reboot. If nothing has queried DNS yet this
     // boot, the system's own account-linking screen resolving
     // accounts.nintendo.com can lose that race and fail, silently, with
-    // nothing in the applet to say why. This is exactly why apply_switchnet()
+    // nothing in the applet to say why. This is exactly why apply_grid0plus()
     // itself can't do the warmup: it reboots right after writing the hosts
     // files, which throws away whatever it just warmed. So: if GRID0+ mode
     // is already active on THIS boot (i.e. we're not the one switching into
@@ -299,7 +299,7 @@ int main(int argc, char **argv) {
     // operation, so there is no reason to pick different numbers. If even
     // starting the thread fails, fall back to running it inline rather than
     // silently skipping the warmup.
-    if (apply_current_mode() == SWITCHNET_MODE_SWITCHNET) {
+    if (apply_current_mode() == GRID0PLUS_MODE_GRID0PLUS) {
         if (R_SUCCEEDED(threadCreate(&s_dnsWarmupThread, dnsWarmupWorker, NULL, NULL,
                                       0x20000, 0x2C, -2))
             && R_SUCCEEDED(threadStart(&s_dnsWarmupThread))) {
@@ -337,20 +337,20 @@ int main(int argc, char **argv) {
         if (k & HidNpadButton_A) {
             status[0] = '\0';
             switch (sel) {
-                case MENU_APPLY_SWITCHNET: {
+                case MENU_APPLY_GRID0PLUS: {
                     char body[160];
                     snprintf(body, sizeof(body),
                              "This will redirect Nintendo online traffic to %s and reboot the console. Continue?",
                              g_server_ip);
                     if (confirmScreen(&pad, "Switch to GRID0+", body)) {
-                        bool ok = apply_switchnet(g_server_ip);
+                        bool ok = apply_grid0plus(g_server_ip);
                         if (ok) {
                             consoleClear(); drawHeader();
                             printf("Applied. Rebooting...\n");
                             consoleUpdate(NULL);
                             svcSleepThread(1200000000ULL);
-                            switchnet_reboot();
-                            snprintf(status, sizeof(status), "Reboot failed — please restart manually.");
+                            grid0plus_reboot();
+                            snprintf(status, sizeof(status), "Reboot failed, please restart manually.");
                         } else {
                             snprintf(status, sizeof(status), "Failed to write to the SD card.");
                         }
@@ -367,8 +367,8 @@ int main(int argc, char **argv) {
                             printf("Applied. Rebooting...\n");
                             consoleUpdate(NULL);
                             svcSleepThread(1200000000ULL);
-                            switchnet_reboot();
-                            snprintf(status, sizeof(status), "Reboot failed — please restart manually.");
+                            grid0plus_reboot();
+                            snprintf(status, sizeof(status), "Reboot failed, please restart manually.");
                         } else {
                             snprintf(status, sizeof(status), "Failed to write to the SD card.");
                         }
@@ -388,7 +388,7 @@ int main(int argc, char **argv) {
                     break;
                 }
                 case MENU_RESET_IP:
-                    config_set_server_ip(SWITCHNET_SERVER_IP_DEFAULT);
+                    config_set_server_ip(GRID0PLUS_SERVER_IP_DEFAULT);
                     snprintf(status, sizeof(status), "GRID0+ IP reset to default.");
                     break;
                 case MENU_BACKUP_NOW: {

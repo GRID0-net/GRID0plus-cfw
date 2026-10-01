@@ -1,5 +1,5 @@
 /*
- * sys-zerotier -- bsd:u MITM, stage 4a: transparent relay plus observation.
+ * sys-GRID+ -- bsd:u MITM, stage 4a: transparent relay plus observation.
  *
  * Every command is forwarded to the real service unchanged. Nothing is
  * diverted yet. The point of this stage is to convert the assumptions in

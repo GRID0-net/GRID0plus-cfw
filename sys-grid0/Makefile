@@ -145,7 +145,7 @@ endif
 #---------------------------------------------------------------------------------------
 
 #---------------------------------------------------------------------------------
-# sys-zerotier additions
+# sys-GRID+ additions
 #
 # The ZeroTier core is built separately into libztcore.a by zt-core.mk rather
 # than being folded into SOURCES. The stratosphere template builds VPATH as
@@ -237,8 +237,8 @@ endif
 # Splatoon 3 startup workaround remains in exefs/ for optional/manual use, but
 # is deliberately excluded from the default test artifact.
 ifneq ($(BUILD),$(notdir $(CURDIR)))
-BUNDLE_ROOT    := $(SZT_DIR)dist/sys-zerotier-base
-BUNDLE_ARCHIVE := $(SZT_DIR)dist/sys-zerotier.zip
+BUNDLE_ROOT    := $(SZT_DIR)dist/sys-GRID+-base
+BUNDLE_ARCHIVE := $(SZT_DIR)dist/sys-GRID+.zip
 
 .PHONY: bundle
 bundle: all overlay-build
@@ -247,10 +247,10 @@ bundle: all overlay-build
 	@cp -f $(SZT_DIR)$(TARGET).nsp $(BUNDLE_ROOT)/atmosphere/contents/4200000000005A54/exefs.nsp
 	@touch $(BUNDLE_ROOT)/atmosphere/contents/4200000000005A54/flags/boot2.flag
 	@mkdir -p $(BUNDLE_ROOT)/switch/.overlays
-	@cp -f $(SZT_DIR)overlay/sys-zerotier.ovl $(BUNDLE_ROOT)/switch/.overlays/sys-zerotier.ovl
-	@mkdir -p $(BUNDLE_ROOT)/licenses/sys-zerotier
-	@cp $(ZT_ROOT)/ext/miniupnpc/LICENSE $(BUNDLE_ROOT)/licenses/sys-zerotier/MiniUPnPc.txt
-	@cp $(ZT_ROOT)/ext/libnatpmp/LICENSE $(BUNDLE_ROOT)/licenses/sys-zerotier/libnatpmp.txt
+	@cp -f $(SZT_DIR)overlay/sys-GRID+.ovl $(BUNDLE_ROOT)/switch/.overlays/sys-GRID+.ovl
+	@mkdir -p $(BUNDLE_ROOT)/licenses/sys-GRID+
+	@cp $(ZT_ROOT)/ext/miniupnpc/LICENSE $(BUNDLE_ROOT)/licenses/sys-GRID+/MiniUPnPc.txt
+	@cp $(ZT_ROOT)/ext/libnatpmp/LICENSE $(BUNDLE_ROOT)/licenses/sys-GRID+/libnatpmp.txt
 	@mkdir -p $(SZT_DIR)dist
 	@bsdtar -a -cf $(BUNDLE_ARCHIVE) -C $(BUNDLE_ROOT) atmosphere switch licenses
 	@echo built ... $(BUNDLE_ARCHIVE)

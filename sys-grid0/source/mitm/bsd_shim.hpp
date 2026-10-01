@@ -1,14 +1,14 @@
 /*
- * sys-zerotier -- the bsd:u MITM interface.
+ * sys-GRID+ -- the bsd:u MITM interface.
  *
  * WHY THIS FILE IS SHAPED LIKE THIS
  *
- * The methods below are the commands sys-zerotier observes or modifies. This
+ * The methods below are the commands sys-GRID+ observes or modifies. This
  * is an AMS_SF_DEFINE_MITM_INTERFACE: libstratosphere's MITM dispatcher raw-
  * forwards an unknown command to the attached target session. Consequently
  * HOS 15--22 additions (34--43, 200 and 201) remain wire-exact without us
  * guessing their private structures, and future commands inherit the same
- * behaviour. Only add a command here when sys-zerotier needs to inspect it and
+ * behaviour. Only add a command here when sys-GRID+ needs to inspect it and
  * its complete IPC signature has been verified.
  *
  * THE RETURN CONVENTION (BSD_MITM.md section 5)

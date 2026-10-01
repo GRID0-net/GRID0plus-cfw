@@ -1,5 +1,5 @@
 /*
- * sys-zerotier -- stub for <endian.h>.
+ * sys-GRID+ -- stub for <endian.h>.
  *
  * devkitA64's newlib has no <endian.h>. node/Constants.hpp includes it for one
  * reason only: to get __BYTE_ORDER when the compiler has not already defined

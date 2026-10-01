@@ -1,4 +1,4 @@
-# Building sys-zerotier
+# Building sys-GRID+
 
 These instructions build the sysmodule and its Ultrahand overlay from a clean
 checkout. The supported target is an aarch64 Nintendo Switch running
@@ -18,8 +18,8 @@ The repository keeps Atmosphere-libs, ZeroTierOne and libultrahand as Git
 submodules. From a fresh clone, initialize them with:
 
 ```sh
-git clone --recurse-submodules <your-sys-zerotier-repository>
-cd sys-zerotier
+git clone --recurse-submodules <your-sys-GRID+-repository>
+cd sys-GRID+
 ```
 
 For an existing checkout:
@@ -62,7 +62,7 @@ make bundle PORTLIBS=/opt/devkitpro/portlibs/switch
 The finished archive is:
 
 ```text
-dist/sys-zerotier.zip
+dist/sys-GRID+.zip
 ```
 
 `make bundle` builds both components and places these files in the archive:
@@ -70,17 +70,17 @@ dist/sys-zerotier.zip
 ```text
 atmosphere/contents/4200000000005A54/exefs.nsp
 atmosphere/contents/4200000000005A54/flags/boot2.flag
-switch/.overlays/sys-zerotier.ovl
-licenses/sys-zerotier/MiniUPnPc.txt
-licenses/sys-zerotier/libnatpmp.txt
+switch/.overlays/sys-GRID+.ovl
+licenses/sys-GRID+/MiniUPnPc.txt
+licenses/sys-GRID+/libnatpmp.txt
 ```
 
 Extract the archive at the root of the Switch SD card. The sysmodule creates
-its runtime configuration under `/config/sys-zerotier/` on first start.
+its runtime configuration under `/config/sys-GRID+/` on first start.
 
 ## Network configuration
 
-Saved networks belong in `/config/sys-zerotier/networks.ini`:
+Saved networks belong in `/config/sys-GRID+/networks.ini`:
 
 ```ini
 [Friends]
@@ -90,7 +90,7 @@ nwid = 0123456789abcdef
 nwid = fedcba9876543210
 ```
 
-Open `sys-zerotier.ovl` from Ultrahand/Tesla to select a saved network or enter
+Open `sys-GRID+.ovl` from Ultrahand/Tesla to select a saved network or enter
 a complete 16-digit network ID. Changes are applied while the console is
 running; switch networks before opening a game's LAN room so fresh virtual
 sockets are created.

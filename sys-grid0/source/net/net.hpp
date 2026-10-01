@@ -1,5 +1,5 @@
 /*
- * sys-zerotier -- primitives for the virtual network shim.
+ * sys-GRID+ -- primitives for the virtual network shim.
  *
  * Deliberately free of any Horizon, libnx or libstratosphere dependency so the
  * whole shim can be built and tested on a host machine. Nothing here allocates.

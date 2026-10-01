@@ -49,9 +49,9 @@ jobs:
       - name: Check version alignment
         run: |
           APP_VERSION=$(sed -n 's/^APP_VERSION := *//p' Makefile)
-          MAJOR=$(sed -n 's/^#define SWITCHNET_VERSION_MAJOR *//p' source/version.h)
-          MINOR=$(sed -n 's/^#define SWITCHNET_VERSION_MINOR *//p' source/version.h)
-          PATCH=$(sed -n 's/^#define SWITCHNET_VERSION_PATCH *//p' source/version.h)
+          MAJOR=$(sed -n 's/^#define GRID0PLUS_VERSION_MAJOR *//p' source/version.h)
+          MINOR=$(sed -n 's/^#define GRID0PLUS_VERSION_MINOR *//p' source/version.h)
+          PATCH=$(sed -n 's/^#define GRID0PLUS_VERSION_PATCH *//p' source/version.h)
           FALLBACK="${MAJOR}.${MINOR}.${PATCH}"
           echo "Makefile APP_VERSION      = ${APP_VERSION}"
           echo "version.h semver fallback = ${FALLBACK}"
@@ -70,8 +70,8 @@ jobs:
       - name: Upload NRO artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SwitchNet-Toolbox-v${{ steps.version.outputs.app_version }}
-          path: toolbox/switchnet.nro
+          name: GRID0plus-Toolbox-v${{ steps.version.outputs.app_version }}
+          path: toolbox/GRID0plus.nro
           if-no-files-found: error
 
   release:
@@ -103,7 +103,7 @@ jobs:
         if: steps.tagcheck.outputs.exists == 'false'
         uses: actions/download-artifact@v4
         with:
-          name: SwitchNet-Toolbox-v${{ needs.build.outputs.app_version }}
+          name: GRID0plus-Toolbox-v${{ needs.build.outputs.app_version }}
 
       - name: Create release
         if: steps.tagcheck.outputs.exists == 'false'
@@ -111,5 +111,5 @@ jobs:
         with:
           tag_name: v${{ needs.build.outputs.app_version }}
           name: ${{ needs.build.outputs.release_name }}
-          files: switchnet.nro
+          files: GRID0plus.nro
           generate_release_notes: true

@@ -43,5 +43,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sys-grid0-bundle
-          path: sys-grid0/dist/sys-zerotier.zip
+          path: sys-grid0/dist/sys-GRID+.zip
           if-no-files-found: error

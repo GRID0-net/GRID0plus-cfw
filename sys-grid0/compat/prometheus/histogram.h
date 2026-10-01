@@ -1,5 +1,5 @@
 /*
- * sys-zerotier -- stub for <prometheus/histogram.h>.
+ * sys-GRID+ -- stub for <prometheus/histogram.h>.
  *
  * node/Metrics.hpp includes this unconditionally but only uses Histogram and
  * CustomFamily behind #ifndef ZT_NO_PEER_METRICS, which the sysmodule build

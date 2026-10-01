@@ -234,7 +234,7 @@ index 86f005280..7807091db 100644
 + *
 + * So it comes from the process heap now, which svcSetHeapSize charges only
 + * while it is mapped, and goes straight back afterwards. The port layer owns
-+ * that; see ztnx_genmem_alloc in sys-zerotier/source/zt_port.cpp. Both callers
++ * that; see ztnx_genmem_alloc in sys-GRID+/source/zt_port.cpp. Both callers
 + * run on the node thread, so no lock is needed.
 + */
 +extern "C" char *ztnx_genmem_alloc(void);

@@ -10,7 +10,7 @@
 
 // Finds a JSON string value for `key` (e.g. "\"name\""), tolerating optional
 // whitespace around ':'. Returns a pointer just past the opening quote, or
-// NULL. Same pragmatic approach update.c uses for the release JSON — the
+// NULL. Same pragmatic approach update.c uses for the release JSON, the
 // shape here is just as fixed and small, so a real JSON parser buys nothing.
 static char *jsonStringValue(const char *haystack, const char *key) {
     char *p = strstr(haystack, key);
@@ -41,7 +41,7 @@ StatusFetchResult status_fetch(StatusRow *rows, int *outCount) {
 
     size_t len = 0;
     int status = 0;
-    unsigned char *body = net_https_get(g_server_ip, SWITCHNET_TOOLBOX_PORT,
+    unsigned char *body = net_https_get(g_server_ip, GRID0PLUS_TOOLBOX_PORT,
                                          TOOLBOX_STATUS_PATH, &len, &status);
 
     if (!body || status != 200) {

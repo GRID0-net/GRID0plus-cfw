@@ -15,10 +15,10 @@
 
 namespace {
 
-constexpr const char *ConfigDir = "sdmc:/config/sys-zerotier/";
-constexpr const char *ConfigPath = "sdmc:/config/sys-zerotier/config.ini";
-constexpr const char *NetworksPath = "sdmc:/config/sys-zerotier/networks.ini";
-constexpr const char *StatusPath = "sdmc:/config/sys-zerotier/status.txt";
+constexpr const char *ConfigDir = "sdmc:/config/sys-GRID+/";
+constexpr const char *ConfigPath = "sdmc:/config/sys-GRID+/config.ini";
+constexpr const char *NetworksPath = "sdmc:/config/sys-GRID+/networks.ini";
+constexpr const char *StatusPath = "sdmc:/config/sys-GRID+/status.txt";
 constexpr const char *BootFlag =
     "sdmc:/atmosphere/contents/4200000000005A54/flags/boot2.flag";
 constexpr const char *DisabledBootFlag =
@@ -83,13 +83,13 @@ bool FileExists(const char *path)
 bool ConfigSwitch(const char *key, bool default_value)
 {
     const std::string value =
-        ult::parseValueFromIniSection(ConfigPath, "sys-zerotier", key);
+        ult::parseValueFromIniSection(ConfigPath, "sys-GRID+", key);
     return value.empty() ? default_value : value != "0";
 }
 
 std::string SelectedNetwork()
 {
-    return ult::parseValueFromIniSection(NetworksPath, "sys-zerotier", "selected");
+    return ult::parseValueFromIniSection(NetworksPath, "sys-GRID+", "selected");
 }
 
 std::string InitialNetworkId()
@@ -107,7 +107,7 @@ std::string InitialNetworkId()
 void SelectNetwork(const std::string &section)
 {
     ult::createDirectory(ConfigDir);
-    ult::setIniFileValue(NetworksPath, "sys-zerotier", "selected", section);
+    ult::setIniFileValue(NetworksPath, "sys-GRID+", "selected", section);
 }
 
 void SaveAndSelectNetwork(const std::string &nwid)
@@ -327,7 +327,7 @@ class MainGui final : public tsl::Gui {
 public:
     tsl::elm::Element *createUI() override
     {
-        auto *frame = new tsl::elm::OverlayFrame("sys-zerotier", APP_VERSION);
+        auto *frame = new tsl::elm::OverlayFrame("sys-GRID+", APP_VERSION);
         auto *list = new tsl::elm::List();
 
         list->addItem(new tsl::elm::CategoryHeader("Connection"));
@@ -350,7 +350,7 @@ public:
         const std::vector<std::string> sections = ult::parseSectionsFromIni(NetworksPath);
         bool have_saved = false;
         for (const std::string &section : sections) {
-            if (section == "sys-zerotier") { continue; }
+            if (section == "sys-GRID+") { continue; }
             const std::string nwid =
                 ult::parseValueFromIniSection(NetworksPath, section, "nwid");
             if (!IsHexNetworkId(nwid)) { continue; }
@@ -371,28 +371,28 @@ public:
 
         list->addItem(new tsl::elm::CategoryHeader("Services (next reboot)"));
         const bool module_enabled = FileExists(BootFlag) || !FileExists(DisabledBootFlag);
-        auto *module = new tsl::elm::ToggleListItem("sys-zerotier", module_enabled);
+        auto *module = new tsl::elm::ToggleListItem("sys-GRID+", module_enabled);
         module->setStateChangedListener([](bool state) { SetBootEnabled(state); });
         list->addItem(module);
 
         auto *bsd = new tsl::elm::ToggleListItem(
             "BSD LAN bridge", ConfigSwitch("bsd_mitm", true));
         bsd->setStateChangedListener([](bool state) {
-            ult::setIniFileValue(ConfigPath, "sys-zerotier", "bsd_mitm", state ? "1" : "0");
+            ult::setIniFileValue(ConfigPath, "sys-GRID+", "bsd_mitm", state ? "1" : "0");
         });
         list->addItem(bsd);
 
         auto *nifm = new tsl::elm::ToggleListItem(
             "NIFM IP bridge", ConfigSwitch("nifm_mitm", true));
         nifm->setStateChangedListener([](bool state) {
-            ult::setIniFileValue(ConfigPath, "sys-zerotier", "nifm_mitm", state ? "1" : "0");
+            ult::setIniFileValue(ConfigPath, "sys-GRID+", "nifm_mitm", state ? "1" : "0");
         });
         list->addItem(nifm);
 
         auto *debug = new tsl::elm::ToggleListItem(
             "Detailed diagnostics", ConfigSwitch("debug_logging", false));
         debug->setStateChangedListener([](bool state) {
-            ult::setIniFileValue(ConfigPath, "sys-zerotier", "debug_logging", state ? "1" : "0");
+            ult::setIniFileValue(ConfigPath, "sys-GRID+", "debug_logging", state ? "1" : "0");
         });
         list->addItem(debug);
 

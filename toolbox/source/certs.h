@@ -1,13 +1,13 @@
-// GRID0+ Toolbox — certificate trust provisioning.
+// GRID0+ Toolbox, certificate trust provisioning.
 //
 // A private server needs the console to trust its TLS certificate. This
 // module mirrors romfs:/sd/... onto the SD card, which installs:
 //
 //  - GRID0+'s root CA (the actual certificate, embedded at build time)
 //    at the paths the browser applet's CA bundle and WebView-based account
-//    linking read from, plus a reference copy under sdmc:/switchnet/certs/.
+//    linking read from, plus a reference copy under sdmc:/GRID0plus/certs/.
 //  - The public disable_ca_verification / disable_browser_ca_verification
-//    ExeFS/NRO IPS patches (from misson20000/exefs_patches — one file per
+//    ExeFS/NRO IPS patches (from misson20000/exefs_patches, one file per
 //    firmware build ID) that make the system SSL service and the browser
 //    applet skip the stock CA check. Without these, installing the CA alone
 //    is not enough: the browser still rejects a self-signed certificate, and
@@ -16,10 +16,10 @@
 //
 // Atmosphère only applies a patch whose build-ID filename matches the
 // firmware actually running, so shipping patches for every supported
-// firmware is harmless on any given console — unmatched ones simply sit
+// firmware is harmless on any given console, unmatched ones simply sit
 // unused.
-#ifndef SWITCHNET_CERTS_H
-#define SWITCHNET_CERTS_H
+#ifndef GRID0PLUS_CERTS_H
+#define GRID0PLUS_CERTS_H
 
 #include <stdbool.h>
 
@@ -29,7 +29,7 @@
 bool certs_provision(void);
 
 // Removes every file certs_provision() would install (by walking the same
-// romfs:/sd/ tree), and prunes any directory left empty by that removal —
+// romfs:/sd/ tree), and prunes any directory left empty by that removal ,
 // never one that still holds something else (e.g. other exefs_patches).
 //
 // Also unconditionally removes a fixed, append-only list of every path a
@@ -38,8 +38,8 @@ bool certs_provision(void);
 // path. Without this, someone who installed an old build, then later
 // updated the .nro itself without ever running "Switch to Default" first,
 // could accumulate files a newer build's tree-mirror can no longer see to
-// clean up — orphaned, not wrong-content (copyFile always overwrites
+// clean up, orphaned, not wrong-content (copyFile always overwrites
 // same-path files), but still GRID0+'s to remove.
 void certs_remove(void);
 
-#endif // SWITCHNET_CERTS_H
+#endif // GRID0PLUS_CERTS_H

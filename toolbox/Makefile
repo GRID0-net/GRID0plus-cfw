@@ -1,5 +1,5 @@
 #---------------------------------------------------------------------------------
-# SwitchNet Toolbox — Makefile (libnx only, no extra portlibs needed).
+# GRID0+ Toolbox Makefile (libnx only, no extra portlibs needed).
 # Based on the official devkitPro switch-examples "application" template.
 #---------------------------------------------------------------------------------
 .SUFFIXES:
@@ -12,7 +12,7 @@ TOPDIR ?= $(CURDIR)
 include $(DEVKITPRO)/libnx/switch_rules
 
 #---------------------------------------------------------------------------------
-TARGET   := switchnet
+TARGET   := GRID0plus
 BUILD    := build
 SOURCES  := source
 DATA     := data
@@ -21,8 +21,8 @@ ROMFS    := romfs
 
 APP_TITLE   := GRID0+ Toolbox
 APP_AUTHOR  := GRID0+
-# Keep in lockstep with source/version.h (SWITCHNET_VERSION_*) and the GitHub
-# release tag (vX.Y.Z) — the updater compares this against GitHub releases.
+# Keep in lockstep with source/version.h (GRID0PLUS_VERSION_*) and the GitHub
+# release tag (vX.Y.Z), the updater compares this against GitHub releases.
 APP_VERSION := 0.5.9
 APP_ICON    := icon.jpg
 
@@ -31,9 +31,9 @@ ARCH := -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 
 CFLAGS := -g -Wall -Wextra -O2 -ffunction-sections -fstack-protector-strong -D_FORTIFY_SOURCE=2 $(ARCH) $(DEFINES)
 CFLAGS += $(INCLUDE) -D__SWITCH__
-CFLAGS += -DSWITCHNET_VERSION_MAJOR=$(word 1,$(subst ., ,$(APP_VERSION)))
-CFLAGS += -DSWITCHNET_VERSION_MINOR=$(word 2,$(subst ., ,$(APP_VERSION)))
-CFLAGS += -DSWITCHNET_VERSION_PATCH=$(word 3,$(subst ., ,$(APP_VERSION)))
+CFLAGS += -DGRID0PLUS_VERSION_MAJOR=$(word 1,$(subst ., ,$(APP_VERSION)))
+CFLAGS += -DGRID0PLUS_VERSION_MINOR=$(word 2,$(subst ., ,$(APP_VERSION)))
+CFLAGS += -DGRID0PLUS_VERSION_PATCH=$(word 3,$(subst ., ,$(APP_VERSION)))
 
 CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 

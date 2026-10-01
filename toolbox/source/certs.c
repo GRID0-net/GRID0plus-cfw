@@ -42,7 +42,7 @@ static bool copyTree(const char *srcDir, const char *dstDir) {
         snprintf(dp, sizeof(dp), "%s/%s", dstDir, e->d_name);
         struct stat st;
         if (stat(sp, &st) == 0 && S_ISDIR(st.st_mode)) {
-            if (!switchnet_ensure_dir(dp)) { ok = false; continue; }
+            if (!grid0plus_ensure_dir(dp)) { ok = false; continue; }
             if (!copyTree(sp, dp)) ok = false;
         } else if (!copyFile(sp, dp)) {
             ok = false;
@@ -100,9 +100,9 @@ static void removeDirAndContents(const char *dir) {
 }
 
 // Every absolute SD-card path a RELEASED version of this app has ever
-// written outside of /atmosphere/hosts (hosts.c's job) and SWITCHNET_DIR's
+// written outside of /atmosphere/hosts (hosts.c's job) and GRID0PLUS_DIR's
 // own config/backup/trace files (config.c/backup.c's job -- backup_restore()
-// needs SWITCHNET_BACKUP_DIR to still exist when apply_default() calls it
+// needs GRID0PLUS_BACKUP_DIR to still exist when apply_default() calls it
 // moments after this file's caller runs, and wiping config.cfg here would
 // discard the user's saved IP and toggle prefs on every single reset).
 //
@@ -126,7 +126,7 @@ static void removeDirAndContents(const char *dir) {
 // version put things there.
 static const char *const LEGACY_OWNED_FILES[] = {
     "sdmc:/rootCA.pem",
-    "sdmc:/switchnet/certs/switchnet_root_ca.pem",
+    "sdmc:/GRID0plus/certs/grid0plus_root_ca.pem",
     "sdmc:/atmosphere/contents/0100000000000803/romfs/browser/RootCaEtc.pem",
     "sdmc:/atmosphere/contents/0100000000000803/romfs/browser/RootCaSdkAdditional.pem",
 };
@@ -137,7 +137,7 @@ static const char *const LEGACY_OWNED_DIRS[] = {
     "sdmc:/atmosphere/exefs_patches/s3certpin_bypass",
     "sdmc:/atmosphere/exefs_patches/s3verifyoption_bypass",
     "sdmc:/atmosphere/nro_patches/disable_browser_ca_verification",
-    "sdmc:/switchnet/certs",
+    "sdmc:/GRID0plus/certs",
 };
 #define LEGACY_OWNED_DIR_COUNT (sizeof(LEGACY_OWNED_DIRS) / sizeof(LEGACY_OWNED_DIRS[0]))
 
@@ -203,7 +203,7 @@ bool certs_provision(void) {
     cleanProvisionedPatchDirs();
     bool ok = copyTree(PROVISION_SRC_ROOT, PROVISION_DST_ROOT);
     fsdevCommitDevice("sdmc");
-    switchnet_trace(ok ? "certs: provisioned (CA + CA-bypass patches)"
+    grid0plus_trace(ok ? "certs: provisioned (CA + CA-bypass patches)"
                        : "certs: some files failed to provision");
     return ok;
 }
@@ -212,5 +212,5 @@ void certs_remove(void) {
     removeTree(PROVISION_SRC_ROOT, PROVISION_DST_ROOT);
     purgeLegacyOwnedPaths();
     fsdevCommitDevice("sdmc");
-    switchnet_trace("certs: removed");
+    grid0plus_trace("certs: removed");
 }

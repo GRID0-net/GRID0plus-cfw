@@ -1,5 +1,5 @@
 /*
- * sys-zerotier -- Horizon OS port layer for the ZeroTier core.
+ * sys-GRID+ -- Horizon OS port layer for the ZeroTier core.
  *
  * NOT YET COMPILED. See README.md.
  */
@@ -83,7 +83,7 @@ namespace ztnx {
     }  // namespace
 
     /* What Node::Node's single malloc needs, measured from the DWARF in
-     * sys-zerotier.elf after ZT_RX_QUEUE_SIZE was cut to 4:
+     * sys-GRID+.elf after ZT_RX_QUEUE_SIZE was cut to 4:
      *
      *   Trace 64 + Switch ~281 KB + Multicaster 48 + Topology 968 +
      *   SelfAwareness 48 + Bond 15960 + PacketMultiplexer 144, each rounded
@@ -456,7 +456,7 @@ namespace ztnx {
                     if (usable_section) {
                         std::memcpy(section, p + 1, len);
                         section[len] = '\0';
-                        usable_section = std::strcmp(section, "sys-zerotier") != 0;
+                        usable_section = std::strcmp(section, "sys-GRID+") != 0;
                     }
                 } else if (usable_section && p < eol && *p != '#' && *p != ';' &&
                            static_cast<size_t>(eol - p) >= 4 &&
@@ -502,7 +502,7 @@ namespace ztnx {
          * incomplete read simply means "try again next poll" rather than
          * "disconnect now". The catalog is read
          * even when config.ini does not exist yet: the overlay can therefore be
-         * the first sys-zerotier component that creates configuration on a new
+         * the first sys-GRID+ component that creates configuration on a new
          * install. */
         bool ResolveConfiguredNetworkId(uint64_t *out)
         {
@@ -536,11 +536,11 @@ namespace ztnx {
         }
 
         constexpr const char *ConfigTemplate =
-            "# sys-zerotier\n"
+            "# sys-GRID+\n"
             "#\n"
             "# Put your ZeroTier network id -- the 16-hex-digit value copied\n"
             "# from ZeroTier Central -- after the '=' on the nwid line below,\n"
-            "# or use the sys-zerotier overlay to enter/select one while running.\n"
+            "# or use the sys-GRID+ overlay to enter/select one while running.\n"
             "#\n"
             "# Every line starting with '#' or ';' is ignored. If the console\n"
             "# sits at \"waiting for a network id\" with an id that looks set,\n"
@@ -551,7 +551,7 @@ namespace ztnx {
             "# member and has to be authorised there. Its assigned address then\n"
             "# shows up in status.txt beside this file.\n"
             "\n"
-            "[sys-zerotier]\n"
+            "[sys-GRID+]\n"
             "network =\n"
             "nwid =\n"
             "bsd_mitm = 1\n"

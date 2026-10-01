@@ -36,7 +36,7 @@ static bool fileContains(const char *path, const char *needle) {
 }
 
 bool backup_exists(void) {
-    DIR *d = opendir(SWITCHNET_BACKUP_DIR);
+    DIR *d = opendir(GRID0PLUS_BACKUP_DIR);
     if (!d) return false;
     struct dirent *e;
     bool any = false;
@@ -50,11 +50,11 @@ bool backup_exists(void) {
 }
 
 int backup_create(void) {
-    if (!switchnet_ensure_dir(SWITCHNET_DIR)) return 0;
-    if (!switchnet_ensure_dir(SWITCHNET_BACKUP_DIR)) return 0;
+    if (!grid0plus_ensure_dir(GRID0PLUS_DIR)) return 0;
+    if (!grid0plus_ensure_dir(GRID0PLUS_BACKUP_DIR)) return 0;
 
-    DIR *d = opendir(SWITCHNET_HOSTS_DIR);
-    if (!d) { switchnet_trace("backup: hosts folder does not exist yet, nothing to save"); return 0; }
+    DIR *d = opendir(GRID0PLUS_HOSTS_DIR);
+    if (!d) { grid0plus_trace("backup: hosts folder does not exist yet, nothing to save"); return 0; }
 
     int n = 0;
     struct dirent *e;
@@ -62,14 +62,14 @@ int backup_create(void) {
         if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, "..")) continue;
 
         char src[FS_MAX_PATH], dst[FS_MAX_PATH];
-        snprintf(src, sizeof(src), "%s/%s", SWITCHNET_HOSTS_DIR, e->d_name);
-        snprintf(dst, sizeof(dst), "%s/%s", SWITCHNET_BACKUP_DIR, e->d_name);
+        snprintf(src, sizeof(src), "%s/%s", GRID0PLUS_HOSTS_DIR, e->d_name);
+        snprintf(dst, sizeof(dst), "%s/%s", GRID0PLUS_BACKUP_DIR, e->d_name);
 
         struct stat st;
         if (stat(src, &st) != 0 || S_ISDIR(st.st_mode)) continue;
         // Never back up a file we generated ourselves: it would let a
         // GRID0+ redirection quietly come back through "restore".
-        if (fileContains(src, SWITCHNET_HOSTS_HEADER_MARK)) continue;
+        if (fileContains(src, GRID0PLUS_HOSTS_HEADER_MARK)) continue;
 
         if (copyFileRaw(src, dst)) n++;
     }
@@ -78,18 +78,18 @@ int backup_create(void) {
     fsdevCommitDevice("sdmc");
     char msg[64];
     snprintf(msg, sizeof(msg), "backup: %d file(s) saved", n);
-    switchnet_trace(msg);
+    grid0plus_trace(msg);
     return n;
 }
 
 int backup_restore(void) {
-    if (!switchnet_ensure_dir(SWITCHNET_HOSTS_DIR)) return 0;
+    if (!grid0plus_ensure_dir(GRID0PLUS_HOSTS_DIR)) return 0;
 
     // Drop our own redirections first so restored files aren't shadowed by a
     // "last matching line wins" entry left over from GRID0+ mode.
     hosts_clear_own();
 
-    DIR *d = opendir(SWITCHNET_BACKUP_DIR);
+    DIR *d = opendir(GRID0PLUS_BACKUP_DIR);
     if (!d) return 0;
 
     int n = 0;
@@ -98,14 +98,14 @@ int backup_restore(void) {
         if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, "..")) continue;
 
         char src[FS_MAX_PATH], dst[FS_MAX_PATH];
-        snprintf(src, sizeof(src), "%s/%s", SWITCHNET_BACKUP_DIR, e->d_name);
-        snprintf(dst, sizeof(dst), "%s/%s", SWITCHNET_HOSTS_DIR, e->d_name);
+        snprintf(src, sizeof(src), "%s/%s", GRID0PLUS_BACKUP_DIR, e->d_name);
+        snprintf(dst, sizeof(dst), "%s/%s", GRID0PLUS_HOSTS_DIR, e->d_name);
 
         struct stat st;
         if (stat(src, &st) != 0 || S_ISDIR(st.st_mode)) continue;
         // Re-validate at restore time too: a backup made by a much older,
         // differently-behaved build could in principle carry our own marker.
-        if (fileContains(src, SWITCHNET_HOSTS_HEADER_MARK)) continue;
+        if (fileContains(src, GRID0PLUS_HOSTS_HEADER_MARK)) continue;
 
         if (copyFileRaw(src, dst)) n++;
     }
@@ -114,6 +114,6 @@ int backup_restore(void) {
     fsdevCommitDevice("sdmc");
     char msg[64];
     snprintf(msg, sizeof(msg), "restore: %d file(s) restored", n);
-    switchnet_trace(msg);
+    grid0plus_trace(msg);
     return n;
 }

@@ -1,5 +1,5 @@
 /*
- * sys-zerotier -- stub for <sys/uio.h>.
+ * sys-GRID+ -- stub for <sys/uio.h>.
  *
  * newlib does not ship it. node/Utils.cpp includes it and then never uses
  * anything from it: there is not a single iovec, readv or writev anywhere in

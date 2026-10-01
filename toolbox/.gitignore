@@ -2,7 +2,7 @@
 *.elf
 *.nacp
 *.map
-switchnet.nro
+GRID0plus.nro
 
 # Never let real certificate/key material or console dumps land in this repo.
 *.pem.real

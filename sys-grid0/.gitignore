@@ -19,7 +19,7 @@
 
 # Release archives and generated packages
 /dist/
-/sys-zerotier-dev-transfer-*.tgz
+/sys-GRID+-dev-transfer-*.tgz
 /.szt-transfer.tgz
 
 # Runtime data, logs, captures, and secrets

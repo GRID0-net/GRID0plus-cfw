@@ -1,5 +1,5 @@
 /*
- * sys-zerotier -- stub replacement for ext/prometheus-cpp-lite.
+ * sys-GRID+ -- stub replacement for ext/prometheus-cpp-lite.
  *
  * WHY THIS EXISTS
  *

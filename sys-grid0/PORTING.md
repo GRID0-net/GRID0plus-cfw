@@ -1,6 +1,6 @@
 # Porting ZeroTier's core to Horizon OS (Nintendo Switch)
 
-Status: the core **builds** for aarch64 as a static library — see `README.md`
+Status: the core **builds** for aarch64 as a static library, see `README.md`
 for the numbers and `patches/0001-horizon-port.patch` for the three source
 changes it needs. It has not yet been built with devkitA64 itself (the
 devkitPro package host was unreachable from the machine this was written on),
@@ -64,10 +64,10 @@ function the port layer provides, `ztnx_secure_random_fill`.
 
 (All three are implemented in `patches/0001-horizon-port.patch`; this section
 is the reasoning behind them. Two further findings that only surfaced when the
-library was actually linked — the prometheus dependency and the core's use of
-exceptions — are written up in `README.md`.)
+library was actually linked, the prometheus dependency and the core's use of
+exceptions, are written up in `README.md`.)
 
-### 3.1 `getauxval` — CPU feature detection
+### 3.1 `getauxval`, CPU feature detection
 
 `node/Utils.cpp` calls `getauxval(AT_HWCAP)` / `AT_HWCAP2` to decide whether to
 use the ARMv8 AES/PMULL/SHA2 instructions. There is no auxv on Horizon.
@@ -89,7 +89,7 @@ Build the AES/GMAC path with `-march=armv8-a+crypto`. This matters: it is the
 difference between ~100 MB/s and ~1 GB/s on the AES-GMAC-SIV transport cipher,
 and CPU time on the system core is the scarcest resource you have.
 
-### 3.2 `open`/`read` on `/dev/urandom` — the CSPRNG
+### 3.2 `open`/`read` on `/dev/urandom`, the CSPRNG
 
 `Utils::getSecureRandom()` opens `/dev/urandom`, refills a 64 KB buffer, and
 whitens it with Salsa20. Replace the file-descriptor path with the console's
@@ -106,7 +106,7 @@ hardware CSPRNG:
 ```
 
 Keep the Salsa20 whitening; it costs nothing. Do **not** ship with the fallback
-seeding (`time(0)` + three heap addresses) as the only entropy — that produces
+seeding (`time(0)` + three heap addresses) as the only entropy, that produces
 guessable identities.
 
 ### 3.3 `time()` must be real before the first `ZT_Node_new`
@@ -121,14 +121,14 @@ network time set, the RTC can be years off; ZeroTier will hand you a
 ## 4. The five callbacks you have to write
 
 `ZT_Node_new` takes a `ZT_Node_Callbacks` with six required entries. This is
-your entire porting boundary — the core touches nothing else:
+your entire porting boundary, the core touches nothing else:
 
 | Callback | Horizon implementation |
 |---|---|
-| `stateGetFunction` / `statePutFunction` | `fs::` on the SD card, under `/atmosphere/contents/<tid>/zt/`. Objects are `identity.public`, `identity.secret`, `planet`, `network.<nwid>.conf`, `peer.<addr>`. Keep writes rare — SD write latency spikes will stall the node thread. |
+| `stateGetFunction` / `statePutFunction` | `fs::` on the SD card, under `/atmosphere/contents/<tid>/zt/`. Objects are `identity.public`, `identity.secret`, `planet`, `network.<nwid>.conf`, `peer.<addr>`. Keep writes rare, SD write latency spikes will stall the node thread. |
 | `wirePacketSendFunction` | One `AF_INET` `SOCK_DGRAM` socket bound to UDP/9993 on `bsd:s`. Return 0 on success, -1 otherwise. |
 | `virtualNetworkFrameFunction` | Ethernet frame arriving from the virtual L2. Hand to lwIP `netif->input`, or to the UDP fast path (§5). |
-| `virtualNetworkConfigFunction` | Fired on `ZT_VIRTUAL_NETWORK_CONFIG_UPDATE`: this is where you learn your assigned IP/netmask and MAC. Store them — the `ldn:u` MITM reports this address to games. |
+| `virtualNetworkConfigFunction` | Fired on `ZT_VIRTUAL_NETWORK_CONFIG_UPDATE`: this is where you learn your assigned IP/netmask and MAC. Store them, the `ldn:u` MITM reports this address to games. |
 | `eventCallback` | `ZT_EVENT_UP/ONLINE/OFFLINE/DOWN` + trace. Drive the status shown in the config overlay. |
 | `pathCheckFunction` (optional) | Return 0 for any destination on the console's own LAN subnet if you want to forbid ZeroTier from forming paths through the local network. Usually leave it null. |
 
@@ -154,7 +154,7 @@ to sit between.
   ~600 lines, no dependency, ~64 KB of buffers. See `BSD_MITM.md` §6.
 - **Full:** lwIP (BSD licence, GPL-compatible) as a `netif` whose `linkoutput`
   is `ZT_Node_processVirtualNetworkFrame`. This is what libzt's `VirtualTap`
-  does — read `libzt/src/VirtualTap.cpp` for the shape, write your own.
+  does, read `libzt/src/VirtualTap.cpp` for the shape, write your own.
 
 If you take lwIP, **do not copy `libzt/src/lwipopts.h`**. Its defaults assume a
 desktop: `PBUF_POOL_SIZE 1024`, `MEMP_NUM_NETCONN 1024`,
@@ -171,12 +171,12 @@ Copy `ldn_mitm/ldn_mitm/res/app.json` as your NPDM starting point and change:
   the headroom and can live with applet-pool contention.
 - `main_thread_stack_size`: `0x20000` is enough for the IPC dispatcher; the ZT
   node thread gets its own stack.
-- Keep `service_access: ["*"]` and `service_host: ["*"]` — you need to host
+- Keep `service_access: ["*"]` and `service_host: ["*"]`, you need to host
   `ldn:u` and `bsd:u` as MITM ports.
 
 Memory discipline is the same as ldn_mitm's: one static `g_malloc_buffer` fed to
 `init::InitializeAllocator`, no dynamic growth. ZeroTier will want considerably
-more than ldn_mitm's 1 MB — budget 4 MB for the node (peer/path objects, the
+more than ldn_mitm's 1 MB, budget 4 MB for the node (peer/path objects, the
 64 KB random buffer, packet fragment queues) plus whatever lwIP takes.
 
 Socket init inside the sysmodule follows ldn_mitm exactly

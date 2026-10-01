@@ -1,5 +1,5 @@
 /*
- * sys-zerotier -- Horizon OS port layer for the ZeroTier core (node/).
+ * sys-GRID+ -- Horizon OS port layer for the ZeroTier core (node/).
  *
  * This file is the entire boundary between ZeroTier's platform-independent
  * core and Horizon: six callbacks and a clock. Everything above it (the packet
@@ -26,19 +26,19 @@ namespace ztnx {
      * costs a proof-of-work each time and gives the console a different
      * address every time, so nothing can ever find it twice. */
     constexpr const char *StateRoot   = "sdmc:/atmosphere/contents/4200000000005A54/zt";
-    constexpr const char *ConfigPath  = "sdmc:/config/sys-zerotier/config.ini";
-    constexpr const char *ConfigDir   = "sdmc:/config/sys-zerotier";
-    constexpr const char *SavedNetworksPath = "sdmc:/config/sys-zerotier/networks.ini";
-    constexpr const char *UplinkLogPath = "sdmc:/config/sys-zerotier/uplink.log";
-    constexpr const char *StatusPath  = "sdmc:/config/sys-zerotier/status.txt";
-    constexpr const char *PeersPath   = "sdmc:/config/sys-zerotier/peers.txt";
-    constexpr const char *BsdLogPath  = "sdmc:/config/sys-zerotier/bsd.log";
-    constexpr const char *NifmLogPath = "sdmc:/config/sys-zerotier/nifm.log";
-    constexpr const char *BootLogPath = "sdmc:/config/sys-zerotier/boot.log";
-    constexpr const char *PiaFirstRequestCapturePath = "sdmc:/config/sys-zerotier/pia-first-request.bin";
-    constexpr const char *PiaFirstReplyCapturePath   = "sdmc:/config/sys-zerotier/pia-first-reply.bin";
-    constexpr const char *PiaRequestCapturePath = "sdmc:/config/sys-zerotier/pia-request.bin";
-    constexpr const char *PiaReplyCapturePath   = "sdmc:/config/sys-zerotier/pia-reply.bin";
+    constexpr const char *ConfigPath  = "sdmc:/config/sys-GRID+/config.ini";
+    constexpr const char *ConfigDir   = "sdmc:/config/sys-GRID+";
+    constexpr const char *SavedNetworksPath = "sdmc:/config/sys-GRID+/networks.ini";
+    constexpr const char *UplinkLogPath = "sdmc:/config/sys-GRID+/uplink.log";
+    constexpr const char *StatusPath  = "sdmc:/config/sys-GRID+/status.txt";
+    constexpr const char *PeersPath   = "sdmc:/config/sys-GRID+/peers.txt";
+    constexpr const char *BsdLogPath  = "sdmc:/config/sys-GRID+/bsd.log";
+    constexpr const char *NifmLogPath = "sdmc:/config/sys-GRID+/nifm.log";
+    constexpr const char *BootLogPath = "sdmc:/config/sys-GRID+/boot.log";
+    constexpr const char *PiaFirstRequestCapturePath = "sdmc:/config/sys-GRID+/pia-first-request.bin";
+    constexpr const char *PiaFirstReplyCapturePath   = "sdmc:/config/sys-GRID+/pia-first-reply.bin";
+    constexpr const char *PiaRequestCapturePath = "sdmc:/config/sys-GRID+/pia-request.bin";
+    constexpr const char *PiaReplyCapturePath   = "sdmc:/config/sys-GRID+/pia-reply.bin";
 
     /* ZeroTier's transport port. 9993 is the default and the one most home
      * routers already have a working UPnP or NAT-PMP mapping for. */

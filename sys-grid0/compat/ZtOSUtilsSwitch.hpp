@@ -1,5 +1,5 @@
 /*
- * sys-zerotier -- the three OSUtils functions node/ actually uses.
+ * sys-GRID+ -- the three OSUtils functions node/ actually uses.
  *
  * node/ reaches into osdep/OSUtils.hpp for exactly three statics, and used to
  * get the declaration transitively through osdep/Binder.hpp. The real header

@@ -1,4 +1,4 @@
-# Intercepting `bsd:u` — the only piece that matters for LAN-play titles
+# Intercepting `bsd:u`, the only piece that matters for LAN-play titles
 
 Games with a native **LAN Play** mode (Mario Kart 8 Deluxe, Splatoon 2 and 3,
 ARMS, Pokkén Tournament DX, Mario Tennis Aces, Nintendo Switch Sports,
@@ -17,7 +17,7 @@ works on completely stock consoles:
 1. Open a UDP socket, `setsockopt(SO_BROADCAST)`, `bind()` to a fixed port.
 2. Send discovery datagrams to the subnet broadcast address (or
    `255.255.255.255`).
-3. Learn about peers from the source address of the replies — `recvfrom`'s
+3. Learn about peers from the source address of the replies, `recvfrom`'s
    `src_addr`, not from any configured list.
 4. Exchange gameplay traffic as unicast UDP to those learned addresses.
 
@@ -73,7 +73,7 @@ there is no way to add a virtual interface to the system's stack. The only
 place to divert the traffic is the IPC boundary between the game and the
 `bsd` service, using Atmosphère's MITM framework.
 
-`sm` decides per **client program**, not per service — `IsMitmDisallowed`
+`sm` decides per **client program**, not per service, `IsMitmDisallowed`
 (`Atmosphere/stratosphere/sm/source/impl/sm_service_manager.cpp:397`) blocks
 only `loader`, `pm`, `spl`, `boot`, `ncm`, `creport` and the MITM module
 itself. Applications are fair game, and `sm` additionally asks the MITM module
@@ -111,7 +111,7 @@ From `libnx/nx/source/services/bsd.c`. The MITM must relay all of these; the
 | 16 | `GetSockName` | Virtual: answer with the ZeroTier address and the bound port. |
 | 17 | `GetSockOpt` | Virtual: answer from our table. |
 | 18 | `Listen` | Relay. |
-| 19 | `Ioctl` | Watch for `SIOCGIFCONF` / `SIOCGIFADDR` — a game that asks this way must be told about the virtual interface. |
+| 19 | `Ioctl` | Watch for `SIOCGIFCONF` / `SIOCGIFADDR`, a game that asks this way must be told about the virtual interface. |
 | 20 | `Fcntl` | Virtual: track `O_NONBLOCK`. |
 | 21 | `SetSockOpt` | Virtual: track `SO_BROADCAST`, `SO_REUSEADDR`, `SO_RCVBUF`. |
 | 22 | `Shutdown` | Virtual: tear down. |
@@ -130,7 +130,7 @@ The policy that keeps online play, the eShop and system services working:
 > either `SO_BROADCAST` is set or the bound port is in the configured
 > LAN-play port set. Everything else stays real, forever.
 
-Start conservative — an explicit per-title port list in the config file — and
+Start conservative, an explicit per-title port list in the config file, and
 loosen it only once real traffic has been observed. A wrong answer here does
 not merely break the game; it breaks the console's networking.
 
@@ -154,7 +154,7 @@ single fd is therefore used across several sessions of the same process. **Key
 the socket table on the client PID, never on the session.** This is the bug
 that will look like random intermittent failures under load.
 
-Buffers on the hot commands are `HipcAutoSelect` — libstratosphere's
+Buffers on the hot commands are `HipcAutoSelect`, libstratosphere's
 `sf::InAutoSelectBuffer` / `sf::OutAutoSelectBuffer` map onto them directly.
 
 ## 6. What sits under the socket layer
@@ -164,7 +164,7 @@ No lwIP in v1. LAN-play traffic is UDP, and the shim only needs:
 - an **ARP responder** for the console's ZeroTier address, plus ARP requests for
   peers so PC ZeroTier clients see a normal neighbour;
 - **IPv4** assembly and parsing, with fragmentation on the send side (ZeroTier's
-  virtual MTU is 2800 by default — set the network's MTU to 1500 in ZeroTier
+  virtual MTU is 2800 by default, set the network's MTU to 1500 in ZeroTier
   Central so a PC client and the console agree);
 - **UDP** header assembly, checksum, and a port-to-socket demultiplexer;
 - **ICMP echo**, purely so `ping` works from a PC during bring-up. Worth the
@@ -194,8 +194,8 @@ section originally settled, and the heading used to overstate it.
 ### 7.1 The part that is not settled: who gets to keep the internet
 
 Observed on hardware: when a LAN-Play title enters LAN mode, the console stops
-having an internet connection. It stays on the router — LAN Play over Wi-Fi
-works, so the radio is still associated and still carrying IP — but the route
+having an internet connection. It stays on the router, LAN Play over Wi-Fi
+works, so the radio is still associated and still carrying IP, but the route
 off-subnet goes away.
 
 For `switch-lan-play` that costs nothing, because the PC provides the internet
@@ -210,7 +210,7 @@ command table:
 | Cmd | Name | Effect if the application calls it |
 |----:|------|---|
 | 26 | `SetExclusiveClient` | one client owns the interface; everyone else is cut off |
-| 34 | `SetBackgroundRequestEnabled` | disables non-foreground requests — ours |
+| 34 | `SetBackgroundRequestEnabled` | disables non-foreground requests, ours |
 | 40 | `SetAcceptableNetworkTypeFlag` | restricts the connection to a non-internet type |
 | 16 | `SetWirelessCommunicationEnabled` | would drop the radio; ruled out, Wi-Fi LAN Play works |
 
@@ -235,6 +235,6 @@ that keeps `bsd:s` and `bsd:u` from colliding.
 
 So v1 is `bsd:u` plus, most likely, a small `nifm:u` MITM. Still no `ldn:u`.
 
-(For the link type itself the escape hatch remains small and known-shaped —
+(For the link type itself the escape hatch remains small and known-shaped ,
 `nifm` reports `NifmInternetConnectionType_Ethernet = 2` versus `_WiFi = 1` in
 `libnx/include/switch/services/nifm.h`.)

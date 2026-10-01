@@ -1,5 +1,5 @@
 /*
- * sys-zerotier -- the virtual network interface.
+ * sys-GRID+ -- the virtual network interface.
  *
  * Sits between the game's intercepted BSD sockets and ZeroTier's virtual layer
  * 2. Owns the console's address on the ZeroTier network, an ARP cache, IPv4

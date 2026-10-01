@@ -7,17 +7,17 @@
 #include <sys/stat.h>
 #include <switch.h>
 
-char g_server_ip[SWITCHNET_SERVER_IP_MAX] = SWITCHNET_SERVER_IP_DEFAULT;
+char g_server_ip[GRID0PLUS_SERVER_IP_MAX] = GRID0PLUS_SERVER_IP_DEFAULT;
 
 static bool s_backupDone = false;
 static bool s_restoreOnDefault = true;
 
 static Mutex s_traceMtx;
 
-void switchnet_trace(const char *step) {
+void grid0plus_trace(const char *step) {
     mutexLock(&s_traceMtx);
-    switchnet_ensure_dir(SWITCHNET_DIR);
-    FILE *f = fopen(SWITCHNET_TRACE_PATH, "a");
+    grid0plus_ensure_dir(GRID0PLUS_DIR);
+    FILE *f = fopen(GRID0PLUS_TRACE_PATH, "a");
     if (f) {
         fputs(step, f);
         fputc('\n', f);
@@ -27,7 +27,7 @@ void switchnet_trace(const char *step) {
     mutexUnlock(&s_traceMtx);
 }
 
-bool switchnet_ensure_dir(const char *path) {
+bool grid0plus_ensure_dir(const char *path) {
     char tmp[FS_MAX_PATH];
     size_t len = strnlen(path, sizeof(tmp) - 1);
     memcpy(tmp, path, len);
@@ -48,15 +48,15 @@ bool switchnet_ensure_dir(const char *path) {
     return true;
 }
 
-// Simple "key=value" text config, one entry per line — no section headers needed,
+// Simple "key=value" text config, one entry per line, no section headers needed,
 // there's only ever one app's settings in this file.
 void config_load(void) {
-    strncpy(g_server_ip, SWITCHNET_SERVER_IP_DEFAULT, sizeof(g_server_ip) - 1);
+    strncpy(g_server_ip, GRID0PLUS_SERVER_IP_DEFAULT, sizeof(g_server_ip) - 1);
     g_server_ip[sizeof(g_server_ip) - 1] = '\0';
     s_backupDone = false;
     s_restoreOnDefault = true;
 
-    FILE *f = fopen(SWITCHNET_CONFIG_FILE, "rb");
+    FILE *f = fopen(GRID0PLUS_CONFIG_FILE, "rb");
     if (!f) return;
 
     char line[256];
@@ -70,7 +70,7 @@ void config_load(void) {
         const char *val = eq + 1;
 
         if (strcmp(key, "server_ip") == 0 && val[0]) {
-            if (strcmp(val, SWITCHNET_SERVER_IP_PREVIOUS) == 0) val = SWITCHNET_SERVER_IP_DEFAULT;
+            if (strcmp(val, GRID0PLUS_SERVER_IP_PREVIOUS) == 0) val = GRID0PLUS_SERVER_IP_DEFAULT;
             strncpy(g_server_ip, val, sizeof(g_server_ip) - 1);
             g_server_ip[sizeof(g_server_ip) - 1] = '\0';
         } else if (strcmp(key, "backup_done") == 0) {
@@ -83,8 +83,8 @@ void config_load(void) {
 }
 
 bool config_save(void) {
-    if (!switchnet_ensure_dir(SWITCHNET_DIR)) return false;
-    FILE *f = fopen(SWITCHNET_CONFIG_FILE, "wb");
+    if (!grid0plus_ensure_dir(GRID0PLUS_DIR)) return false;
+    FILE *f = fopen(GRID0PLUS_CONFIG_FILE, "wb");
     if (!f) return false;
     fprintf(f, "server_ip=%s\n", g_server_ip);
     fprintf(f, "backup_done=%d\n", s_backupDone ? 1 : 0);

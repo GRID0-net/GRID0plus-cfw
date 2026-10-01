@@ -1,5 +1,5 @@
 /*
- * sys-zerotier -- Atmosphere sysmodule entry point.
+ * sys-GRID+ -- Atmosphere sysmodule entry point.
  *
  * REFERENCE SKELETON. Never compiled. Structure follows
  * ldn_mitm/ldn_mitm/source/ldnmitm_main.cpp, which is the reference for how a
@@ -24,7 +24,7 @@ namespace ams {
          * no growth path -- a sysmodule that runs the heap dry takes the
          * console down with it. Budget notes in PORTING.md section 6. */
         /* Sized against what ZeroTier actually allocates, read out of the
-         * DWARF in sys-zerotier.elf rather than guessed:
+         * DWARF in sys-GRID+.elf rather than guessed:
          *
          *   Node::Node's single ::malloc   ~298 KB  (Trace+Switch+Multicaster+
          *                                            Topology+SelfAwareness+

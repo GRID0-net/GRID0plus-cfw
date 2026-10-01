@@ -1,9 +1,9 @@
-// GRID0+ Toolbox — minimal HTTPS client (raw BSD sockets + the console's
+// GRID0+ Toolbox, minimal HTTPS client (raw BSD sockets + the console's
 // native SSL service), used by the updater and the server-status screen to
 // talk to GitHub and to GRID0+'s own toolbox API. No libcurl or other
 // portlib dependency.
-#ifndef SWITCHNET_NET_H
-#define SWITCHNET_NET_H
+#ifndef GRID0PLUS_NET_H
+#define GRID0PLUS_NET_H
 
 #include <stddef.h>
 #include <stdio.h>
@@ -22,7 +22,7 @@ bool net_ready(void);
 
 // HTTPS GET https://host:port/path. Requires socketInitializeDefault() and
 // sslInitialize() to already be active. `host` may be a hostname (resolved
-// normally) or a literal dotted-quad IP — GRID0+'s own toolbox API is
+// normally) or a literal dotted-quad IP, GRID0+'s own toolbox API is
 // reached by IP, on its own port, never by a redirected Nintendo hostname.
 // Returns the response body (malloc'd, caller frees) and its length, or NULL
 // on failure (*out_status carries a NET_ERR_* code or the HTTP status).
@@ -52,4 +52,4 @@ long net_https_get_to_file(const char *host, int port, const char *path, FILE *o
 // happens to resolve in the console's favour anyway.
 bool net_dns_warmup(const char *host);
 
-#endif // SWITCHNET_NET_H
+#endif // GRID0PLUS_NET_H
