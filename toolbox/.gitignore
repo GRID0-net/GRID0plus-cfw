@@ -1,0 +1,12 @@
+/build/
+*.elf
+*.nacp
+*.map
+GRID0plus.nro
+
+# Never let real certificate/key material or console dumps land in this repo.
+*.pem.real
+*.key
+*.nsp
+*.xci
+*.nca

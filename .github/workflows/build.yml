@@ -1,0 +1,135 @@
+# One build, one SD-ready zip: sysmodule + overlay + toolbox NRO.
+# Push to main (or PR) builds everything; bumping APP_VERSION in
+# toolbox/Makefile also cuts a release with the united zip attached.
+name: Build GRID0-cfw
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkita64:latest
+    outputs:
+      app_version: ${{ steps.version.outputs.app_version }}
+      release_name: ${{ steps.version.outputs.release_name }}
+      zip_name: ${{ steps.package.outputs.zip_name }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Switch portlibs
+        run: dkp-pacman -S --noconfirm --needed switch-curl switch-zlib switch-mbedtls
+
+      - name: Make sure bsdtar exists
+        run: command -v bsdtar || dkp-pacman -S --noconfirm --needed libarchive
+
+      - name: Build sysmodule bundle
+        run: |
+          make -C sys-grid0 zt-core -j"$(nproc)"
+          make -C sys-grid0 bundle -j"$(nproc)"
+          ls -l sys-grid0/dist/sys-GRID+.zip
+
+      - name: Check toolbox version alignment
+        working-directory: toolbox
+        run: |
+          APP_VERSION=$(sed -n 's/^APP_VERSION := *//p' Makefile)
+          MAJOR=$(sed -n 's/^#define GRID0PLUS_VERSION_MAJOR *//p' source/version.h)
+          MINOR=$(sed -n 's/^#define GRID0PLUS_VERSION_MINOR *//p' source/version.h)
+          PATCH=$(sed -n 's/^#define GRID0PLUS_VERSION_PATCH *//p' source/version.h)
+          FALLBACK="${MAJOR}.${MINOR}.${PATCH}"
+          echo "Makefile APP_VERSION      = ${APP_VERSION}"
+          echo "version.h semver fallback = ${FALLBACK}"
+          if [ "${APP_VERSION}" != "${FALLBACK}" ]; then
+            echo "::error::Version mismatch between Makefile and source/version.h"
+            exit 1
+          fi
+
+      - name: Build toolbox NRO
+        working-directory: toolbox
+        run: |
+          make -j"$(nproc)"
+          ls -l GRID0plus.nro
+
+      - name: Read version
+        id: version
+        run: |
+          APP_VERSION=$(sed -n 's/^APP_VERSION := *//p' toolbox/Makefile)
+          MAJOR=$(echo "${APP_VERSION}" | cut -d. -f1)
+          MINOR=$(echo "${APP_VERSION}" | cut -d. -f2)
+          echo "app_version=${APP_VERSION}" >> "$GITHUB_OUTPUT"
+          # Beta phase (major version 0): release title tracks major.minor,
+          # e.g. 0.1.0 -> "beta-0.1". Update this once the project leaves 0.x.
+          echo "release_name=beta-${MAJOR}.${MINOR}" >> "$GITHUB_OUTPUT"
+
+      - name: Pack united SD zip
+        id: package
+        run: |
+          APP_VERSION=$(sed -n 's/^APP_VERSION := *//p' toolbox/Makefile)
+          ZIP_NAME="GRID0-cfw-v${APP_VERSION}.zip"
+          rm -rf sdroot && mkdir sdroot
+          bsdtar -xf sys-grid0/dist/sys-GRID+.zip -C sdroot
+          cp -f toolbox/GRID0plus.nro sdroot/switch/GRID0plus.nro
+          (cd sdroot && bsdtar -a -cf "../${ZIP_NAME}" .)
+          echo "zip_name=${ZIP_NAME}" >> "$GITHUB_OUTPUT"
+          echo "--- sd layout ---"
+          bsdtar -tf "${ZIP_NAME}"
+
+      - name: Upload united zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.zip_name }}
+          path: ${{ steps.package.outputs.zip_name }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Check whether this version was already released
+        id: tagcheck
+        run: |
+          TAG="v${{ needs.build.outputs.app_version }}"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/${TAG}")
+          if [ "${STATUS}" = "200" ]; then
+            echo "::notice::${TAG} already has a release; skipping (bump APP_VERSION to release again)."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download united zip
+        if: steps.tagcheck.outputs.exists == 'false'
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.zip_name }}
+
+      - name: Create release
+        if: steps.tagcheck.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build.outputs.app_version }}
+          name: ${{ needs.build.outputs.release_name }}
+          files: ${{ needs.build.outputs.zip_name }}
+          generate_release_notes: true
