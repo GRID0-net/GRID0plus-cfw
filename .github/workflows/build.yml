@@ -1,17 +1,13 @@
-# Builds the GRID0+ Toolbox .nro. Only runs when toolbox/ (or this
-# workflow) changes — the sysmodule builds separately. Every push to `main`
-# that bumps APP_VERSION also cuts a GitHub release automatically — no manual
-# tag push needed. Re-running the workflow against a version that already has
-# a release (e.g. a docs-only push) is a no-op for the release step.
-name: Build toolbox
+# One build, one SD-ready zip: sysmodule + overlay + toolbox NRO.
+# Push to main (or PR) builds everything; bumping APP_VERSION in
+# toolbox/Makefile also cuts a release with the united zip attached.
+name: Build GRID0-cfw
 
 on:
   push:
     branches: [main]
-    paths: ['toolbox/**', '.github/workflows/toolbox.yml']
   pull_request:
     branches: [main]
-    paths: ['toolbox/**', '.github/workflows/toolbox.yml']
   workflow_dispatch:
 
 concurrency:
@@ -23,30 +19,31 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: devkitpro/devkita64:latest
-    defaults:
-      run:
-        working-directory: toolbox
     outputs:
       app_version: ${{ steps.version.outputs.app_version }}
       release_name: ${{ steps.version.outputs.release_name }}
+      zip_name: ${{ steps.package.outputs.zip_name }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-      - name: Read version
-        id: version
+      - name: Install Switch portlibs
+        run: dkp-pacman -S --noconfirm --needed switch-curl switch-zlib switch-mbedtls
+
+      - name: Make sure bsdtar exists
+        run: command -v bsdtar || dkp-pacman -S --noconfirm --needed libarchive
+
+      - name: Build sysmodule bundle
         run: |
-          APP_VERSION=$(sed -n 's/^APP_VERSION := *//p' Makefile)
-          MAJOR=$(echo "${APP_VERSION}" | cut -d. -f1)
-          MINOR=$(echo "${APP_VERSION}" | cut -d. -f2)
-          echo "app_version=${APP_VERSION}" >> "$GITHUB_OUTPUT"
-          # Beta phase (major version 0): release title tracks major.minor,
-          # e.g. 0.1.0 -> "beta-0.1". Update this once the project leaves 0.x.
-          echo "release_name=beta-${MAJOR}.${MINOR}" >> "$GITHUB_OUTPUT"
-          echo "APP_VERSION from Makefile: ${APP_VERSION}"
+          make -C sys-grid0 zt-core -j"$(nproc)"
+          make -C sys-grid0 bundle -j"$(nproc)"
+          ls -l sys-grid0/dist/sys-zerotier.zip
 
-      - name: Check version alignment
+      - name: Check toolbox version alignment
+        working-directory: toolbox
         run: |
           APP_VERSION=$(sed -n 's/^APP_VERSION := *//p' Makefile)
           MAJOR=$(sed -n 's/^#define SWITCHNET_VERSION_MAJOR *//p' source/version.h)
@@ -60,18 +57,41 @@ jobs:
             exit 1
           fi
 
-      - name: Build
-        run: make -j"$(nproc)"
-
-      - name: Prepare versioned artifact
+      - name: Build toolbox NRO
+        working-directory: toolbox
         run: |
-          ls -l *.nro
+          make -j"$(nproc)"
+          ls -l switchnet.nro
 
-      - name: Upload NRO artifact
+      - name: Read version
+        id: version
+        run: |
+          APP_VERSION=$(sed -n 's/^APP_VERSION := *//p' toolbox/Makefile)
+          MAJOR=$(echo "${APP_VERSION}" | cut -d. -f1)
+          MINOR=$(echo "${APP_VERSION}" | cut -d. -f2)
+          echo "app_version=${APP_VERSION}" >> "$GITHUB_OUTPUT"
+          # Beta phase (major version 0): release title tracks major.minor,
+          # e.g. 0.1.0 -> "beta-0.1". Update this once the project leaves 0.x.
+          echo "release_name=beta-${MAJOR}.${MINOR}" >> "$GITHUB_OUTPUT"
+
+      - name: Pack united SD zip
+        id: package
+        run: |
+          APP_VERSION=$(sed -n 's/^APP_VERSION := *//p' toolbox/Makefile)
+          ZIP_NAME="GRID0-cfw-v${APP_VERSION}.zip"
+          rm -rf sdroot && mkdir sdroot
+          bsdtar -xf sys-grid0/dist/sys-zerotier.zip -C sdroot
+          cp -f toolbox/switchnet.nro sdroot/switch/switchnet.nro
+          (cd sdroot && bsdtar -a -cf "../${ZIP_NAME}" .)
+          echo "zip_name=${ZIP_NAME}" >> "$GITHUB_OUTPUT"
+          echo "--- sd layout ---"
+          bsdtar -tf "${ZIP_NAME}"
+
+      - name: Upload united zip
         uses: actions/upload-artifact@v4
         with:
-          name: SwitchNet-Toolbox-v${{ steps.version.outputs.app_version }}
-          path: toolbox/switchnet.nro
+          name: ${{ steps.package.outputs.zip_name }}
+          path: ${{ steps.package.outputs.zip_name }}
           if-no-files-found: error
 
   release:
@@ -80,14 +100,14 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Check whether this version was already released
         id: tagcheck
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: v${{ needs.build.outputs.app_version }}
         run: |
+          TAG="v${{ needs.build.outputs.app_version }}"
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
@@ -99,11 +119,11 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Download NRO artifact
+      - name: Download united zip
         if: steps.tagcheck.outputs.exists == 'false'
         uses: actions/download-artifact@v4
         with:
-          name: SwitchNet-Toolbox-v${{ needs.build.outputs.app_version }}
+          name: ${{ needs.build.outputs.zip_name }}
 
       - name: Create release
         if: steps.tagcheck.outputs.exists == 'false'
@@ -111,5 +131,5 @@ jobs:
         with:
           tag_name: v${{ needs.build.outputs.app_version }}
           name: ${{ needs.build.outputs.release_name }}
-          files: switchnet.nro
+          files: ${{ needs.build.outputs.zip_name }}
           generate_release_notes: true
