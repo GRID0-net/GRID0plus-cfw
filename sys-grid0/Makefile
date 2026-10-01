@@ -244,7 +244,7 @@ BUNDLE_ARCHIVE := $(SZT_DIR)dist/sys-zerotier.zip
 bundle: all overlay-build
 	@rm -rf $(BUNDLE_ROOT)
 	@mkdir -p $(BUNDLE_ROOT)/atmosphere/contents/4200000000005A54/flags
-	@cp -f $(SZT_DIR)sys-zerotier.nsp $(BUNDLE_ROOT)/atmosphere/contents/4200000000005A54/exefs.nsp
+	@cp -f $(SZT_DIR)$(TARGET).nsp $(BUNDLE_ROOT)/atmosphere/contents/4200000000005A54/exefs.nsp
 	@touch $(BUNDLE_ROOT)/atmosphere/contents/4200000000005A54/flags/boot2.flag
 	@mkdir -p $(BUNDLE_ROOT)/switch/.overlays
 	@cp -f $(SZT_DIR)overlay/sys-zerotier.ovl $(BUNDLE_ROOT)/switch/.overlays/sys-zerotier.ovl
