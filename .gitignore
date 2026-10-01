@@ -1,12 +1,38 @@
+# Build products
 /build/
+/build-ztcore/*.o
+/build-ztcore/*.d
+/build-ztcore/*.a
+/build-ztcore/*.map
+/build-ztcore/*.lst
+/overlay/build/
+*.o
+*.d
+*.a
 *.elf
-*.nacp
-*.map
-switchnet.nro
-
-# Never let real certificate/key material or console dumps land in this repo.
-*.pem.real
-*.key
+*.nso
 *.nsp
-*.xci
-*.nca
+*.npdm
+*.nro
+*.ovl
+*.nacp
+
+# Release archives and generated packages
+/dist/
+/sys-zerotier-dev-transfer-*.tgz
+/.szt-transfer.tgz
+
+# Runtime data, logs, captures, and secrets
+/listpeers/
+/logs and bin/
+/.research-splatoon/
+**/identity.secret
+**/authtoken.secret
+**/metricstoken.secret
+build.log
+/tests/test_vnet
+/tests/test_nat_support
+
+# Optional game ExeFS experiments
+/exefs/
+/exefs.nsp

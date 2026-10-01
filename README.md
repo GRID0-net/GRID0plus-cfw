@@ -1,160 +1,69 @@
-# GRID0+ Toolbox
+# sys-GRID0
 
-A small Nintendo Switch homebrew (`.nro`) that switches an Atmosphère console
-between the **GRID0+** network and its **Default** (previous/original)
-hosts configuration — the same mechanism used by network-switcher homebrew
-like Prelude, without any bundled game mods.
+A port of ZeroTier with the GRID0 network to the nintendo switch as a sysmodule, very AI assisted in the making, yet extremely functional with better results than i had hoped. Get the latest release from the releases page, or read the build instructions in build.md
 
-```
-GRID0+ Toolbox  <VERSION>
-========================================
+## where sys-GRID0 is at right now
 
-Current mode : DEFAULT
-GRID0+ IP : 89.168.58.206
+The whole point of this was to make native LAN play work over the internet
+without needing a PC relay or another console sitting on the same network. We
+have reached that point, and it has worked in actual matches.
 
-> Switch to GRID0+
-  Switch to Default (restore original hosts)
-  Set custom GRID0+ IP
-  Reset IP to default (89.168.58.206)
-  Back up hosts folder now
-  Restore backup on Default mode: ON
-  Check for updates
-  Server status
-  Exit
-```
+Here is what is working at the moment:
 
-## Features
+- ZeroTier runs as a Horizon sysmodule, joins a network, keeps its identity and
+  managed IP, and survives normal sleep and wake.
+- The virtual IPv4 side handles ARP, IPv4, UDP and ICMP. The host tests are at
+  88/88, with fuzz testing of the packet path as well.
+- The `bsd:u` and `nifm:u` MITMs are doing their job. LAN discovery and game
+  sockets can be sent through ZeroTier while ordinary Switch networking keeps
+  working too.
+- Mario Kart 8 Deluxe, Splatoon 2 and Splatoon 3 have all managed LAN play over
+  ZeroTier with Switch and Ryujinx players. The other games in the whitelist
+  are ready for people to try and report back on.
+- There is now a proper Ultrahand overlay. It shows the current status, lets a
+  user pick a saved network or type the entire 16-digit network ID, applies a
+  network change without rebooting, and has switches for the sysmodule, BSD,
+  NIFM and detailed logging.
+- New installs turn on the sysmodule and both MITMs automatically. Saved
+  networks live in `/config/sys-GRID0/networks.ini`, so an update does not
+  wipe them out.
+- A lot of memory work and logging cleanup has gone into keeping the module
+  alive on real hardware. The larger BSD/NIFM logs are optional; the normal
+  build keeps the small boot, status and uplink logs running.
 
-- **Mode switch.** *GRID0+* mode redirects the usual Nintendo online
-  hostnames to a GRID0+ server and reboots so Atmosphère's DNS-MITM picks
-  it up; *Default* mode removes that redirection and reboots back.
-- **Full hosts backup.** Before GRID0+ mode ever writes to
-  `/atmosphere/hosts` for the first time, every file already in that folder
-  is copied to `sdmc:/switchnet/hosts_backup/` — not just the files this app
-  manages, so a different community server's redirections or your own
-  blocklist survive. "Back up hosts folder now" repeats this on demand, and
-  "Switch to Default" restores it (toggle: "Restore backup on Default mode").
-- **Certificate provisioning (stubs for now).** GRID0+'s certificate
-  material is copied into place alongside the hosts change. The actual
-  certificate isn't included yet — see [Certificates](#certificates) below.
-- **On-demand auto-updater.** "Check for updates" asks GRID0+'s own
-  toolbox API (not GitHub directly — this repo is private, so an
-  unauthenticated request for its releases would just 404) whether a newer
-  `.nro` is tagged, and if so downloads and installs it over the file you're
-  currently running. It never phones home on its own — only when you press
-  the button. See [Updates & server status](#updates--server-status) below.
-- **Server status.** Shows a coarse ok/degraded/down/unknown for each
-  GRID0+ service (dauth, aauth, baas, stubs, npln, dashboard, dns,
-  natcheck), from the same toolbox API. No error detail, no credential
-  needed — just enough to tell "GRID0+ is down" from "my own network is
-  the problem".
-- **IP override.** "Set custom GRID0+ IP" opens the on-screen keyboard to
-  point at a different server (e.g. a local instance for debugging); "Reset
-  IP to default" goes back to `89.168.58.206`. Both the updater and the
-  status screen follow this same address.
+## current limitations
 
-## How it works
+The latest test build adds game-exit/reinitialization cleanup and automatic
+UPnP/NAT-PMP router mapping. Those changes still need repeated-session testing
+on hardware; see [the test notes](LIFECYCLE_NAT_TESTING.md). Router mapping can
+help restrictive connections, but cannot promise a direct path through CGNAT
+or networks that block UDP.
 
-| What | Where |
-| --- | --- |
-| Host redirections | `/atmosphere/hosts/{sysmmc,emummc}.txt` (Atmosphère DNS-MITM) |
-| DNS-MITM on/off | `/atmosphere/config/system_settings.ini` |
-| Hosts backup | `sdmc:/switchnet/hosts_backup/` (mirrors the whole hosts folder) |
-| App settings (IP, flags) | `sdmc:/switchnet/config.cfg` |
-| Certificates & CA-bypass patches | `romfs/sd/` mirrored onto the SD card root — `rootCA.pem`, the browser CA bundle, and the `exefs_patches`/`nro_patches` below |
-| Debug trace | `sdmc:/switchnet/trace.txt` |
+There are still things left to do. Games that only support local wireless mode
+need an `ldn:u` MITM before they can use ZeroTier. The LAN whitelist covers the
+games tested so far, but more compatibility testing is welcome. If something
+breaks, include `status.txt`, `uplink.log`, and (when enabled) `bsd.log` and
+`nifm.log` with the report so it can actually be investigated.
 
-Because it only writes files Atmosphère (and the console's browser applet)
-read at boot/launch, everything is reversible by switching modes or deleting
-`sdmc:/switchnet/` and the files listed above by hand.
+## the important folders
 
-The generated hosts file redirects the common Nintendo online endpoints
-(accounts, `*.srv.nintendo.net`, the NEX secure-server wildcard, the browser
-connectivity check) to the configured GRID0+ IP, and null-routes
-telemetry in both modes. It does not contain per-game server IDs or bundled
-mods — extend `source/hosts.c` (`hosts_build`) as GRID0+'s own
-infrastructure grows.
-
-## Certificates & certificate trust
-
-`romfs/sd/` is a mirror of the SD card root: everything under it gets copied
-onto the SD card, at the same relative path, when GRID0+ mode is applied
-(and removed again in Default mode). It currently contains:
-
-- **GRID0+'s actual root CA** (`CN=GRID0+ Local CA`, embedded at build
-  time) at `switchnet/certs/switchnet_root_ca.pem`, `rootCA.pem`, and the
-  console's browser-applet CA bundle under
-  `atmosphere/contents/0100000000000803/romfs/browser/`.
-- **`disable_ca_verification`** (`atmosphere/exefs_patches/`) and
-  **`disable_browser_ca_verification`** (`atmosphere/nro_patches/`) — the
-  public per-firmware-build-ID IPS patches from
-  [misson20000/exefs_patches](https://github.com/misson20000/exefs_patches)
-  that make the system SSL service and the browser applet accept a
-  self-signed certificate. **Installing the CA alone is not enough** — the
-  browser and system SSL service still enforce the stock CA check without
-  these, which is what error **2123-0308** (browser fails to open during
-  account linking) generally means. Atmosphère only applies the patch whose
-  filename matches the running firmware's build ID, so shipping patches for
-  every supported firmware is harmless.
-- **`bcat_signature_bypass`** — one patch, for the `bcat` sysmodule build
-  `6D9772A7…` that firmware **22.5.0** ships. It replaces the boolean BCAT
-  stores from its central RSA verification callback — that callback's own
-  result — with a constant true, which is what lets the console accept the
-  delivery-cache response GRID0+ signs itself rather than refusing content
-  Nintendo's key never touched. Unlike the two sets above this one is not
-  from upstream: it is GRID0+'s own patch, for this one build, out of the
-  operator's own dump, and it neither creates nor impersonates a Nintendo
-  signature. A firmware update needs a new one — the build ID then doesn't
-  match, so Atmosphère applies nothing and BCAT falls back to the 304
-  answers. It only matters if the console actually reaches GRID0+ for the
-  three `bcat-*` CDN hosts, which this app's hosts file already routes
-  there; the server side (real delivery-cache files under `bcat.seed_dir`,
-  or it keeps answering 304) is written up in GRID0+'s
-  `internal/bcat/README.md`.
-
-To rotate the certificate later: replace the PEM files under `romfs/sd/`
-with the new root CA, bump `APP_VERSION`, and push to `main` — CI builds and
-releases it, and existing installs pick it up through the in-app updater.
-
-## Updates & server status
-
-This repository is **private**. GitHub's API answers an unauthenticated
-`releases/latest` request against a private repo with a 404, and the
-alternative — putting a GitHub token in the `.nro` itself — would make that
-credential permanently extractable from every copy in the field (`strings`
-on the binary is all it takes). So the app never talks to GitHub at all:
-
-```
-Console  ──GET /updates/latest──►  GRID0+'s toolbox API  ──(token)──►  GitHub
-Console  ◄──tag/url/size──────────         (same shape a real GitHub response has)
-Console  ──GET /updates/download──►  toolbox API  ──(token)──►  GitHub release asset
+```text
+source/                 sysmodule, ZeroTier port and LAN MITMs
+source/net/             virtual IPv4 network and packet handling
+overlay/                Ultrahand/Tesla overlay
+compat/                 Horizon and dependency compatibility shims
+patches/                small Horizon-specific ZeroTier patch
+tests/                  host-side VNet tests and packet reference data
+Atmosphere-libs/        pinned Atmosphère dependency submodule
+ZeroTierOne/            pinned ZeroTier dependency submodule
 ```
 
-`source/net.c`/`source/update.c` reach this at `g_server_ip` (the same
-address/override the hosts screen uses) on `SWITCHNET_TOOLBOX_PORT` (8443,
-`source/config.h`) — a dedicated port on the GRID0+ server's nginx edge,
-not a redirected Nintendo hostname, so no DNS entry is needed for it. The
-"Server status" screen (`source/status.c`) talks to the same host/port,
-`/status` instead of `/updates/*`.
+For prerequisites, submodules, build outputs, installation, and tests, see
+[build.md](build.md).
 
-The server side of this — `internal/toolbox` and `cmd/toolbox` in the
-(also private) `switchnet` repository — holds the actual GitHub credential
-and is what makes both features work; there is nothing further to configure
-in this repository for them.
+## licensing
 
-## Building
-
-Requires [devkitPro](https://devkitpro.org/) with the `switch-dev` package,
-or Docker:
-
-```sh
-docker run --rm -v "$PWD:/work" -w /work devkitpro/devkita64 make -j$(nproc)
-```
-
-The result is `switchnet.nro` — copy it to `/switch/` on your SD card.
-
-## Disclaimer
-
-This project is not affiliated with, endorsed by, or connected to Nintendo.
-"Nintendo" and "Nintendo Switch" are trademarks of Nintendo. Use it only on
-hardware you own, running Atmosphère custom firmware you've set up yourself.
+The ZeroTier `node/` sources are MPL-2.0. Atmosphère/libstratosphere and the
+other bundled dependencies retain their upstream licenses. The port, shim and
+overlay code should be distributed with the license terms of the project as it
+is released; do not add ZeroTier's separately licensed `libzt` component.
