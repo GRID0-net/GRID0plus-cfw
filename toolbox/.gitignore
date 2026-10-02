@@ -2,7 +2,7 @@
 *.elf
 *.nacp
 *.map
-GRID0plus.nro
+grid0plus-toolbox.nro
 
 # Never let real certificate/key material or console dumps land in this repo.
 *.pem.real

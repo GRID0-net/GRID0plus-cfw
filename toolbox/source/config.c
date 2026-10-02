@@ -50,7 +50,23 @@ bool grid0plus_ensure_dir(const char *path) {
 
 // Simple "key=value" text config, one entry per line, no section headers needed,
 // there's only ever one app's settings in this file.
+// Toolbox 0.5.x kept its folder at sdmc:/switchnet. Moving it keeps an
+// upgrading console's saved server and, more importantly, the hosts backup
+// that "Switch to Default" restores the user's own hosts file from.
+#define LEGACY_DIR "sdmc:/switchnet"
+
+static void migrateLegacyDir(void) {
+    struct stat st;
+    if (stat(GRID0PLUS_DIR, &st) == 0) return;
+    if (stat(LEGACY_DIR, &st) != 0 || !S_ISDIR(st.st_mode)) return;
+    if (rename(LEGACY_DIR, GRID0PLUS_DIR) == 0)
+        grid0plus_trace("config: moved sdmc:/switchnet to " GRID0PLUS_DIR);
+    else
+        grid0plus_trace("config: WARN could not move sdmc:/switchnet");
+}
+
 void config_load(void) {
+    migrateLegacyDir();
     strncpy(g_server_ip, GRID0PLUS_SERVER_IP_DEFAULT, sizeof(g_server_ip) - 1);
     g_server_ip[sizeof(g_server_ip) - 1] = '\0';
     s_backupDone = false;

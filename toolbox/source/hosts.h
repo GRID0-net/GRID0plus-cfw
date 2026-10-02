@@ -21,6 +21,9 @@
 // which IP it pointed at, used to tell "ours" apart from a file the user
 // (or another community server project) put there themselves.
 #define GRID0PLUS_HOSTS_HEADER_MARK "GRID0PLUS NETWORK - Atmosphere DNS-MITM"
+// Written by Toolbox 0.5.x; still recognised so an upgraded console's
+// existing hosts file reads as GRID0+ mode.
+#define GRID0PLUS_HOSTS_LEGACY_MARK "SWITCHNET NETWORK - Atmosphere DNS-MITM"
 
 #define GRID0PLUS_HOSTS_DIR    "sdmc:/atmosphere/hosts"
 #define GRID0PLUS_HOSTS_SYSMMC GRID0PLUS_HOSTS_DIR "/sysmmc.txt"

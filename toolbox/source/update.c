@@ -19,8 +19,8 @@
 // never needs, a GitHub token of its own.
 #define TOOLBOX_UPDATES_PATH "/updates/latest"
 
-#define LEGACY_NRO_FILE "sdmc:/switch/grid0plus.nro"
-#define LEGACY_TMP_FILE "sdmc:/switch/grid0plus.nro.new"
+#define LEGACY_NRO_FILE "sdmc:/switch/grid0plus-toolbox.nro"
+#define LEGACY_TMP_FILE "sdmc:/switch/grid0plus-toolbox.nro.new"
 
 static char s_selfNro[512] = {0};
 static char s_selfTmp[520] = {0};
@@ -260,7 +260,7 @@ Grid0plusUpdateResult update_apply(long expectedSize, Grid0plusUpdateProgressFn 
         if (copyOver(selfTmpPath(), LEGACY_NRO_FILE)) {
             placed = true;
             remove(selfTmpPath());
-            grid0plus_trace("update: WARN target locked, wrote to switch/grid0plus.nro instead");
+            grid0plus_trace("update: WARN target locked, wrote to switch/grid0plus-toolbox.nro instead");
         }
     }
 
