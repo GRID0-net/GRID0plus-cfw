@@ -12,7 +12,7 @@ TOPDIR ?= $(CURDIR)
 include $(DEVKITPRO)/libnx/switch_rules
 
 #---------------------------------------------------------------------------------
-TARGET   := GRID0plus
+TARGET   := grid0plus-toolbox
 BUILD    := build
 SOURCES  := source
 DATA     := data
@@ -23,7 +23,7 @@ APP_TITLE   := GRID0+ Toolbox
 APP_AUTHOR  := GRID0+
 # Keep in lockstep with source/version.h (GRID0PLUS_VERSION_*) and the GitHub
 # release tag (vX.Y.Z), the updater compares this against GitHub releases.
-APP_VERSION := 0.5.9
+APP_VERSION := 0.6.0
 APP_ICON    := icon.jpg
 
 #---------------------------------------------------------------------------------

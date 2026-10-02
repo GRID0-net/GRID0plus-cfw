@@ -61,7 +61,7 @@ jobs:
         working-directory: toolbox
         run: |
           make -j"$(nproc)"
-          ls -l GRID0plus.nro
+          ls -l grid0plus-toolbox.nro
 
       - name: Read version
         id: version
@@ -81,7 +81,7 @@ jobs:
           ZIP_NAME="GRID0-cfw-v${APP_VERSION}.zip"
           rm -rf sdroot && mkdir sdroot
           bsdtar -xf sys-grid0/dist/sys-GRID+.zip -C sdroot
-          cp -f toolbox/GRID0plus.nro sdroot/switch/GRID0plus.nro
+          cp -f toolbox/grid0plus-toolbox.nro sdroot/switch/grid0plus-toolbox.nro
           (cd sdroot && bsdtar -a -cf "../${ZIP_NAME}" .)
           echo "zip_name=${ZIP_NAME}" >> "$GITHUB_OUTPUT"
           echo "--- sd layout ---"
@@ -92,6 +92,16 @@ jobs:
         with:
           name: ${{ steps.package.outputs.zip_name }}
           path: ${{ steps.package.outputs.zip_name }}
+          if-no-files-found: error
+
+      # The release also carries the bare .nro: the toolbox's self-updater
+      # (through GRID0+'s /updates/latest) downloads the release's one .nro
+      # asset, never the zip.
+      - name: Upload toolbox NRO
+        uses: actions/upload-artifact@v4
+        with:
+          name: grid0plus-toolbox-nro
+          path: toolbox/grid0plus-toolbox.nro
           if-no-files-found: error
 
   release:
@@ -125,11 +135,19 @@ jobs:
         with:
           name: ${{ needs.build.outputs.zip_name }}
 
+      - name: Download toolbox NRO
+        if: steps.tagcheck.outputs.exists == 'false'
+        uses: actions/download-artifact@v4
+        with:
+          name: grid0plus-toolbox-nro
+
       - name: Create release
         if: steps.tagcheck.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.build.outputs.app_version }}
           name: ${{ needs.build.outputs.release_name }}
-          files: ${{ needs.build.outputs.zip_name }}
+          files: |
+            ${{ needs.build.outputs.zip_name }}
+            grid0plus-toolbox.nro
           generate_release_notes: true

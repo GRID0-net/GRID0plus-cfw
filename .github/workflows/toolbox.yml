@@ -1,8 +1,7 @@
-# Builds the GRID0+ Toolbox .nro. Only runs when toolbox/ (or this
-# workflow) changes, the sysmodule builds separately. Every push to `main`
-# that bumps APP_VERSION also cuts a GitHub release automatically, no manual
-# tag push needed. Re-running the workflow against a version that already has
-# a release (e.g. a docs-only push) is a no-op for the release step.
+# Builds the GRID0+ Toolbox .nro on its own, as a quick check when toolbox/
+# changes. Releases are cut by build.yml only, which attaches both the united
+# SD zip and grid0plus-toolbox.nro to one release: two workflows releasing
+# the same tag raced, and the loser's file never reached the release.
 name: Build toolbox
 
 on:
@@ -70,46 +69,7 @@ jobs:
       - name: Upload NRO artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GRID0plus-Toolbox-v${{ steps.version.outputs.app_version }}
-          path: toolbox/GRID0plus.nro
+          name: grid0plus-toolbox-v${{ steps.version.outputs.app_version }}
+          path: toolbox/grid0plus-toolbox.nro
           if-no-files-found: error
 
-  release:
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Check whether this version was already released
-        id: tagcheck
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: v${{ needs.build.outputs.app_version }}
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/${TAG}")
-          if [ "${STATUS}" = "200" ]; then
-            echo "::notice::${TAG} already has a release; skipping (bump APP_VERSION to release again)."
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Download NRO artifact
-        if: steps.tagcheck.outputs.exists == 'false'
-        uses: actions/download-artifact@v4
-        with:
-          name: GRID0plus-Toolbox-v${{ needs.build.outputs.app_version }}
-
-      - name: Create release
-        if: steps.tagcheck.outputs.exists == 'false'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ needs.build.outputs.app_version }}
-          name: ${{ needs.build.outputs.release_name }}
-          files: GRID0plus.nro
-          generate_release_notes: true
