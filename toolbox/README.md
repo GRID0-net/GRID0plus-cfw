@@ -129,7 +129,7 @@ releases it, and existing installs pick it up through the in-app updater.
 ## Updates & server status
 
 The in-app updater asks GitHub's public API for this repository's latest
-release (`api.github.com/repos/net-GRID0/cfw-GRID0plus/releases/latest`)
+release (`api.github.com/repos/GRID0-net/GRID0plus-cfw/releases/latest`)
 and downloads its `grid0plus-toolbox.nro` asset, following GitHub's
 redirect to the asset host. Nothing is configured for it and no token is
 involved: the repository is public. The requests go out as HTTP/1.0 so

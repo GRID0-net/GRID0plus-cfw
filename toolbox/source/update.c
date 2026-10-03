@@ -17,7 +17,7 @@
 // Until the repository was public this went through GRID0+'s own
 // /updates/latest relay, which held a GitHub token.
 #define RELEASES_HOST "api.github.com"
-#define RELEASES_PATH "/repos/net-GRID0/cfw-GRID0plus/releases/latest"
+#define RELEASES_PATH "/repos/GRID0-net/GRID0plus-cfw/releases/latest"
 #define RELEASE_ASSET "grid0plus-toolbox.nro"
 
 #define LEGACY_NRO_FILE "sdmc:/switch/grid0plus-toolbox.nro"
