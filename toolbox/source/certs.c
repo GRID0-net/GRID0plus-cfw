@@ -136,6 +136,9 @@ static const char *const LEGACY_OWNED_DIRS[] = {
     "sdmc:/atmosphere/exefs_patches/disable_ca_verification",
     "sdmc:/atmosphere/exefs_patches/s3certpin_bypass",
     "sdmc:/atmosphere/exefs_patches/s3verifyoption_bypass",
+    // The hand-installed test build of s3smallmatch_bypass: same patch,
+    // removed so a console does not carry it twice.
+    "sdmc:/atmosphere/exefs_patches/s3_wait_fullmember_test",
     "sdmc:/atmosphere/nro_patches/disable_browser_ca_verification",
     "sdmc:/GRID0plus/certs",
 };
