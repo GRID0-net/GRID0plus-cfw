@@ -96,6 +96,16 @@ onto the SD card, at the same relative path, when GRID0+ mode is applied
   account linking) generally means. Atmosphère only applies the patch whose
   filename matches the running firmware's build ID, so shipping patches for
   every supported firmware is harmless.
+- **`s3smallmatch_bypass`**, one patch, for Splatoon 3's main build
+  `28C4287A…`. It lets a matchmade game start with fewer than eight players,
+  which GRID0+'s queue does after a short wait. The game refuses an
+  undersized match in three places, each a player count compared with the
+  full size: the wait for the room to fill (`WaitFullmember`,
+  `0x71038A420C`), the minimum-player check that raises
+  `MatchSyncDisconnect1` (`0x71032C1C7C`), and the member-count check that
+  raises `ShareMemberNumInvalid3` (`0x7103898160`). Each compare is turned
+  into one that always matches. Confirmed on hardware with two consoles,
+  on one network and across two. A game update needs a new patch.
 - **`bcat_signature_bypass`**, one patch, for the `bcat` sysmodule build
   `6D9772A7…` that firmware **22.5.0** ships. It replaces the boolean BCAT
   stores from its central RSA verification callback, that callback's own
@@ -118,29 +128,21 @@ releases it, and existing installs pick it up through the in-app updater.
 
 ## Updates & server status
 
-This repository is **private**. GitHub's API answers an unauthenticated
-`releases/latest` request against a private repo with a 404, and the
-alternative, putting a GitHub token in the `.nro` itself, would make that
-credential permanently extractable from every copy in the field (`strings`
-on the binary is all it takes). So the app never talks to GitHub at all:
+The in-app updater asks GitHub's public API for this repository's latest
+release (`api.github.com/repos/net-GRID0/cfw-GRID0plus/releases/latest`)
+and downloads its `grid0plus-toolbox.nro` asset, following GitHub's
+redirect to the asset host. Nothing is configured for it and no token is
+involved: the repository is public. The requests go out as HTTP/1.0 so
+GitHub answers with a plain `Content-Length` body; `source/net.c` does not
+decode chunked transfer encoding.
 
-```
-Console  ──GET /updates/latest──►  GRID0+'s toolbox API  ──(token)──►  GitHub
-Console  ◄──tag/url/size──────────         (same shape a real GitHub response has)
-Console  ──GET /updates/download──►  toolbox API  ──(token)──►  GitHub release asset
-```
+Before 0.7.0 the repository was private and updates went through GRID0+'s
+own `/updates/latest` relay, which held a GitHub token; that relay is how a
+0.6 install reaches 0.7.
 
-`source/net.c`/`source/update.c` reach this at `g_server_ip` (the same
-address/override the hosts screen uses) on `GRID0PLUS_TOOLBOX_PORT` (8443,
-`source/config.h`), a dedicated port on the GRID0+ server's nginx edge,
-not a redirected Nintendo hostname, so no DNS entry is needed for it. The
-"Server status" screen (`source/status.c`) talks to the same host/port,
-`/status` instead of `/updates/*`.
-
-The server side of this, `internal/toolbox` and `cmd/toolbox` in the
-(also private) `switchnet` repository, holds the actual GitHub credential
-and is what makes both features work; there is nothing further to configure
-in this repository for them.
+The "Server status" screen (`source/status.c`) still talks to the GRID0+
+server, at `g_server_ip` on `GRID0PLUS_TOOLBOX_PORT` (8443,
+`source/config.h`), `/status`.
 
 ## Building
 
