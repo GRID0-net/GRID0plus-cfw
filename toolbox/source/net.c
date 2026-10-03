@@ -154,8 +154,12 @@ static void sslDisconnect(SslConnection *sslConn, SslContext *sslCtx, int sslFd)
 
 static int sendHttpGet(SslConnection *sslConn, const char *host, const char *path) {
     char req[2560];
+    // HTTP/1.0 so a server answers with a Content-Length body rather than a
+    // chunked one, which nothing here decodes: GitHub's API chunks its
+    // HTTP/1.1 answers, and a chunk-size line landing inside a JSON key
+    // would break the updater's parsing.
     int rl = snprintf(req, sizeof(req),
-                      "GET %s HTTP/1.1\r\nHost: %s\r\n"
+                      "GET %s HTTP/1.0\r\nHost: %s\r\n"
                       "User-Agent: GRID0+Toolbox\r\n"
                       "Accept: */*\r\nConnection: close\r\n\r\n",
                       path, host);

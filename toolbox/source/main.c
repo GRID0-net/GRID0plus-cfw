@@ -174,13 +174,13 @@ static void runUpdateFlow(PadState *pad) {
     if (upd.error != 0) {
         char why[200];
         switch (upd.error) {
-        case NET_ERR_CONNECT:   snprintf(why, sizeof(why), "Could not connect to %s:%d. Check the server IP and your internet connection.", g_server_ip, GRID0PLUS_TOOLBOX_PORT); break;
-        case NET_ERR_TLS:       snprintf(why, sizeof(why), "Could not open a secure connection to %s:%d.", g_server_ip, GRID0PLUS_TOOLBOX_PORT); break;
-        case NET_ERR_PROTO:     snprintf(why, sizeof(why), "The server's answer could not be read."); break;
+        case NET_ERR_CONNECT:   snprintf(why, sizeof(why), "Could not connect to GitHub. Check your internet connection."); break;
+        case NET_ERR_TLS:       snprintf(why, sizeof(why), "Could not open a secure connection to GitHub."); break;
+        case NET_ERR_PROTO:     snprintf(why, sizeof(why), "GitHub's release list could not be read."); break;
         case NET_ERR_NOT_READY: snprintf(why, sizeof(why), "The console's network services could not be started. Restart the Toolbox."); break;
         case NET_ERR_OOM:       snprintf(why, sizeof(why), "Out of memory."); break;
         default:
-            if (upd.error > 0) snprintf(why, sizeof(why), "The server answered HTTP %d.", upd.error);
+            if (upd.error > 0) snprintf(why, sizeof(why), "GitHub answered HTTP %d.", upd.error);
             else snprintf(why, sizeof(why), "Unknown network error (%d).", upd.error);
         }
         messageScreen(pad, "Could not check for updates", why);

@@ -95,7 +95,7 @@ jobs:
           if-no-files-found: error
 
       # The release also carries the bare .nro: the toolbox's self-updater
-      # (through GRID0+'s /updates/latest) downloads the release's one .nro
+      # (GitHub's releases/latest for this repository) downloads the .nro
       # asset, never the zip.
       - name: Upload toolbox NRO
         uses: actions/upload-artifact@v4

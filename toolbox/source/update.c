@@ -11,13 +11,14 @@
 #include <sys/stat.h>
 #include <switch.h>
 
-// grid0plus-nro's source is a private repository, so an unauthenticated
-// request for its releases from the console would get a 404. GRID0+'s own
-// toolbox API holds the GitHub credential instead and answers the same
-// tag_name/browser_download_url/size shape a real GitHub response would ,
-// see grid0plus's internal/toolbox package. The console never sees, and
-// never needs, a GitHub token of its own.
-#define TOOLBOX_UPDATES_PATH "/updates/latest"
+// Releases come straight from GitHub's public API for this repository.
+// build.yml cuts one release per toolbox version, tagged v<APP_VERSION>, with
+// the SD zip and grid0plus-toolbox.nro attached; the updater takes the .nro.
+// Until the repository was public this went through GRID0+'s own
+// /updates/latest relay, which held a GitHub token.
+#define RELEASES_HOST "api.github.com"
+#define RELEASES_PATH "/repos/net-GRID0/cfw-GRID0plus/releases/latest"
+#define RELEASE_ASSET "grid0plus-toolbox.nro"
 
 #define LEGACY_NRO_FILE "sdmc:/switch/grid0plus-toolbox.nro"
 #define LEGACY_TMP_FILE "sdmc:/switch/grid0plus-toolbox.nro.new"
@@ -78,25 +79,29 @@ static bool parseReleaseJson(const char *json, int *maj, int *min, int *patch,
     char *tp = jsonStringValue(json, "\"tag_name\"");
     if (!tp) return false;
     if (*tp == 'v' || *tp == 'V') tp++;
-    *maj = (int)strtol(tp, &tp, 10);
+    char *end;
+    *maj = (int)strtol(tp, &end, 10);
+    if (end == tp) return false;
+    tp = end;
     if (*tp == '.') tp++;
     *min = (int)strtol(tp, &tp, 10);
     if (*tp == '.') tp++;
     *patch = (int)strtol(tp, NULL, 10);
 
-    char *up = jsonStringValue(json, "\"browser_download_url\"");
-    if (up) {
-        char *ue = strchr(up, '"');
-        if (ue) {
-            size_t ul = (size_t)(ue - up);
-            if (ul < urlCap) { memcpy(url, up, ul); url[ul] = '\0'; }
-        }
-    }
-
-    char *sp = strstr(json, "\"size\":");
-    if (sp) { sp += 7; *size = strtol(sp, NULL, 10); }
-
-    return *maj > 0;
+    // A release carries several assets (the SD zip too), so find the .nro's
+    // own entry: its size and download URL follow its name in the object.
+    char *asset = strstr(json, "\"name\":\"" RELEASE_ASSET "\"");
+    if (!asset) return false;
+    char *sp = strstr(asset, "\"size\":");
+    if (!sp) return false;
+    *size = strtol(sp + 7, NULL, 10);
+    char *up = jsonStringValue(asset, "\"browser_download_url\"");
+    if (!up) return false;
+    char *ue = strchr(up, '"');
+    if (!ue || (size_t)(ue - up) >= urlCap) return false;
+    memcpy(url, up, (size_t)(ue - up));
+    url[ue - up] = '\0';
+    return true;
 }
 
 static int semverCompare(int amaj, int amin, int apatch, int bmaj, int bmin, int bpatch) {
@@ -115,7 +120,7 @@ Grid0plusUpdate update_check(void) {
     unsigned char *body = NULL;
     // One retry: the first request after launch can race DNS/network bring-up.
     for (int attempt = 0; attempt < 2 && !body; attempt++) {
-        body = net_https_get(g_server_ip, GRID0PLUS_TOOLBOX_PORT, TOOLBOX_UPDATES_PATH, &len, &status);
+        body = net_https_get(RELEASES_HOST, 443, RELEASES_PATH, &len, &status);
         if (!body && attempt == 0) svcSleepThread(1000000000ULL);
     }
     if (!body || status != 200) {
@@ -197,8 +202,7 @@ Grid0plusUpdateResult update_apply(long expectedSize, Grid0plusUpdateProgressFn 
         fclose(f); remove(selfTmpPath());
         return GRID0PLUS_UPDATE_NET_FAIL;
     }
-    // The toolbox relay's download URL names its own port explicitly
-    // (":8443"); a bare host defaults to 443 for anything that doesn't.
+    // A download URL may name its port explicitly; a bare host is 443.
     char host[256] = {0};
     int port = 443;
     char *colon = strrchr(hostPort, ':');
