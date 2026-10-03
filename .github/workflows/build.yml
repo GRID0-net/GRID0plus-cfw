@@ -1,6 +1,16 @@
-# One build, one SD-ready zip: sysmodule + overlay + toolbox NRO.
-# Push to main (or PR) builds everything; bumping APP_VERSION in
-# toolbox/Makefile also cuts a release with the united zip attached.
+# One SD-ready zip, sysmodule + overlay + toolbox NRO, built incrementally.
+#
+# Only the part that changed is built. The other part is taken from the
+# latest release, so a toolbox-only change does not rebuild the sysmodule and
+# a sysmodule-only change does not rebuild the toolbox.
+#
+# Releases (push to main only):
+#   - a new toolbox APP_VERSION releases as v<APP_VERSION>;
+#   - a sysmodule change without one releases as v<APP_VERSION>-sys.<run>,
+#     which the toolbox's updater reads as the version it already runs, so
+#     consoles are not offered an update for a sysmodule-only release.
+# Each release carries the united zip and the bare grid0plus-toolbox.nro
+# (what the toolbox's self-updater downloads).
 name: Build GRID0-cfw
 
 on:
@@ -15,15 +25,113 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  plan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    outputs:
+      toolbox: ${{ steps.changes.outputs.toolbox }}
+      sysmodule: ${{ steps.changes.outputs.sysmodule }}
+      app_version: ${{ steps.version.outputs.app_version }}
+      release_name: ${{ steps.version.outputs.release_name }}
+      release_tag: ${{ steps.version.outputs.release_tag }}
+      changed: ${{ steps.changes.outputs.changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version
+        id: version
+        run: |
+          APP_VERSION=$(sed -n 's/^APP_VERSION := *//p' toolbox/Makefile)
+          MAJOR=$(echo "${APP_VERSION}" | cut -d. -f1)
+          MINOR=$(echo "${APP_VERSION}" | cut -d. -f2)
+          echo "app_version=${APP_VERSION}" >> "$GITHUB_OUTPUT"
+          # Beta phase (major version 0): release title tracks major.minor.
+          echo "release_name=beta-${MAJOR}.${MINOR}" >> "$GITHUB_OUTPUT"
+          if gh release view "v${APP_VERSION}" -R "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "release_tag=v${APP_VERSION}-sys.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+            echo "toolbox_released=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "release_tag=v${APP_VERSION}" >> "$GITHUB_OUTPUT"
+            echo "toolbox_released=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Find what changed
+        id: changes
+        run: |
+          case "${{ github.event_name }}" in
+            push)         BASE="${{ github.event.before }}" ;;
+            pull_request) BASE="${{ github.event.pull_request.base.sha }}" ;;
+            *)            BASE="" ;;
+          esac
+          if [ -z "${BASE}" ] || ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            FILES="toolbox/ sys-grid0/"   # unknown base: build both
+          else
+            FILES=$(git diff --name-only "${BASE}" "${{ github.sha }}")
+          fi
+          echo "${FILES}"
+          TOOLBOX=false; SYSMODULE=false
+          echo "${FILES}" | grep -q '^toolbox/' && TOOLBOX=true
+          echo "${FILES}" | grep -qE '^(sys-grid0/|\.gitmodules)' && SYSMODULE=true
+          # Nothing to reuse yet: build both.
+          if ! gh release view -R "${{ github.repository }}" >/dev/null 2>&1; then
+            TOOLBOX=true; SYSMODULE=true
+          fi
+          # A new toolbox version always ships a freshly built NRO.
+          if [ "${{ steps.version.outputs.toolbox_released }}" = "false" ]; then TOOLBOX=true; fi
+          CHANGED=false
+          if [ "${TOOLBOX}" = true ] || [ "${SYSMODULE}" = true ]; then CHANGED=true; fi
+          echo "changed=${CHANGED}" >> "$GITHUB_OUTPUT"
+          echo "toolbox=${TOOLBOX}" >> "$GITHUB_OUTPUT"
+          echo "sysmodule=${SYSMODULE}" >> "$GITHUB_OUTPUT"
+          echo "toolbox=${TOOLBOX} sysmodule=${SYSMODULE}"
+
+  toolbox:
+    needs: plan
+    if: needs.plan.outputs.toolbox == 'true'
     runs-on: ubuntu-latest
     container:
       image: devkitpro/devkita64:latest
-    outputs:
-      app_version: ${{ steps.version.outputs.app_version }}
-      release_name: ${{ steps.version.outputs.release_name }}
-      zip_name: ${{ steps.package.outputs.zip_name }}
+    defaults:
+      run:
+        working-directory: toolbox
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
+      - name: Check version alignment
+        run: |
+          APP_VERSION=$(sed -n 's/^APP_VERSION := *//p' Makefile)
+          MAJOR=$(sed -n 's/^#define GRID0PLUS_VERSION_MAJOR *//p' source/version.h)
+          MINOR=$(sed -n 's/^#define GRID0PLUS_VERSION_MINOR *//p' source/version.h)
+          PATCH=$(sed -n 's/^#define GRID0PLUS_VERSION_PATCH *//p' source/version.h)
+          if [ "${APP_VERSION}" != "${MAJOR}.${MINOR}.${PATCH}" ]; then
+            echo "::error::Version mismatch between Makefile (${APP_VERSION}) and source/version.h (${MAJOR}.${MINOR}.${PATCH})"
+            exit 1
+          fi
+
+      - name: Build toolbox NRO
+        run: |
+          make -j"$(nproc)"
+          ls -l grid0plus-toolbox.nro
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: toolbox-nro
+          path: toolbox/grid0plus-toolbox.nro
+          if-no-files-found: error
+
+  sysmodule:
+    needs: plan
+    if: needs.plan.outputs.sysmodule == 'true'
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkita64:latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,121 +141,87 @@ jobs:
       - name: Install Switch portlibs
         run: dkp-pacman -S --noconfirm --needed switch-curl switch-zlib switch-mbedtls
 
-      - name: Make sure bsdtar exists
-        run: command -v bsdtar || dkp-pacman -S --noconfirm --needed libarchive
-
       - name: Build sysmodule bundle
         run: |
           make -C sys-grid0 zt-core -j"$(nproc)"
           make -C sys-grid0 bundle -j"$(nproc)"
           ls -l sys-grid0/dist/sys-GRID+.zip
 
-      - name: Check toolbox version alignment
-        working-directory: toolbox
-        run: |
-          APP_VERSION=$(sed -n 's/^APP_VERSION := *//p' Makefile)
-          MAJOR=$(sed -n 's/^#define GRID0PLUS_VERSION_MAJOR *//p' source/version.h)
-          MINOR=$(sed -n 's/^#define GRID0PLUS_VERSION_MINOR *//p' source/version.h)
-          PATCH=$(sed -n 's/^#define GRID0PLUS_VERSION_PATCH *//p' source/version.h)
-          FALLBACK="${MAJOR}.${MINOR}.${PATCH}"
-          echo "Makefile APP_VERSION      = ${APP_VERSION}"
-          echo "version.h semver fallback = ${FALLBACK}"
-          if [ "${APP_VERSION}" != "${FALLBACK}" ]; then
-            echo "::error::Version mismatch between Makefile and source/version.h"
-            exit 1
-          fi
-
-      - name: Build toolbox NRO
-        working-directory: toolbox
-        run: |
-          make -j"$(nproc)"
-          ls -l grid0plus-toolbox.nro
-
-      - name: Read version
-        id: version
-        run: |
-          APP_VERSION=$(sed -n 's/^APP_VERSION := *//p' toolbox/Makefile)
-          MAJOR=$(echo "${APP_VERSION}" | cut -d. -f1)
-          MINOR=$(echo "${APP_VERSION}" | cut -d. -f2)
-          echo "app_version=${APP_VERSION}" >> "$GITHUB_OUTPUT"
-          # Beta phase (major version 0): release title tracks major.minor,
-          # e.g. 0.1.0 -> "beta-0.1". Update this once the project leaves 0.x.
-          echo "release_name=beta-${MAJOR}.${MINOR}" >> "$GITHUB_OUTPUT"
-
-      - name: Pack united SD zip
-        id: package
-        run: |
-          APP_VERSION=$(sed -n 's/^APP_VERSION := *//p' toolbox/Makefile)
-          ZIP_NAME="GRID0-cfw-v${APP_VERSION}.zip"
-          rm -rf sdroot && mkdir sdroot
-          bsdtar -xf sys-grid0/dist/sys-GRID+.zip -C sdroot
-          cp -f toolbox/grid0plus-toolbox.nro sdroot/switch/grid0plus-toolbox.nro
-          (cd sdroot && bsdtar -a -cf "../${ZIP_NAME}" .)
-          echo "zip_name=${ZIP_NAME}" >> "$GITHUB_OUTPUT"
-          echo "--- sd layout ---"
-          bsdtar -tf "${ZIP_NAME}"
-
-      - name: Upload united zip
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.package.outputs.zip_name }}
-          path: ${{ steps.package.outputs.zip_name }}
+          name: sysmodule-bundle
+          path: sys-grid0/dist/sys-GRID+.zip
           if-no-files-found: error
 
-      # The release also carries the bare .nro: the toolbox's self-updater
-      # (GitHub's releases/latest for this repository) downloads the .nro
-      # asset, never the zip.
-      - name: Upload toolbox NRO
-        uses: actions/upload-artifact@v4
-        with:
-          name: grid0plus-toolbox-nro
-          path: toolbox/grid0plus-toolbox.nro
-          if-no-files-found: error
-
-  release:
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  package:
+    needs: [plan, toolbox, sysmodule]
+    # Runs when the builds that were needed succeeded; a skipped build means
+    # that part comes from the latest release.
+    if: >-
+      always() && needs.plan.result == 'success' &&
+      needs.toolbox.result != 'failure' && needs.toolbox.result != 'cancelled' &&
+      needs.sysmodule.result != 'failure' && needs.sysmodule.result != 'cancelled'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+      TAG: ${{ needs.plan.outputs.release_tag }}
     steps:
-      - name: Check whether this version was already released
-        id: tagcheck
+      - name: Fetch the newly built parts
+        uses: actions/download-artifact@v4
+        with:
+          path: new
+          merge-multiple: true
+
+      - name: Fetch the latest release, for the parts that did not change
+        if: needs.plan.outputs.toolbox != 'true' || needs.plan.outputs.sysmodule != 'true'
         run: |
-          TAG="v${{ needs.build.outputs.app_version }}"
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/${TAG}")
-          if [ "${STATUS}" = "200" ]; then
-            echo "::notice::${TAG} already has a release; skipping (bump APP_VERSION to release again)."
-            echo "exists=true" >> "$GITHUB_OUTPUT"
+          mkdir -p previous
+          gh release download -R "${{ github.repository }}" -D previous \
+            -p 'GRID0-cfw-*.zip' -p 'grid0plus-toolbox.nro'
+          ls -l previous
+
+      - name: Pack united SD zip
+        id: pack
+        run: |
+          ZIP_NAME="GRID0-cfw-${TAG}.zip"
+          rm -rf sdroot && mkdir sdroot
+          if [ -f "new/sys-GRID+.zip" ]; then
+            unzip -q "new/sys-GRID+.zip" -d sdroot
           else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
+            # The previous release's sysmodule files: its zip minus the NRO.
+            unzip -q previous/GRID0-cfw-*.zip -d sdroot
+            rm -f sdroot/switch/grid0plus-toolbox.nro
           fi
+          mkdir -p sdroot/switch out
+          if [ -f new/grid0plus-toolbox.nro ]; then
+            cp new/grid0plus-toolbox.nro out/grid0plus-toolbox.nro
+          else
+            cp previous/grid0plus-toolbox.nro out/grid0plus-toolbox.nro
+          fi
+          cp out/grid0plus-toolbox.nro sdroot/switch/grid0plus-toolbox.nro
+          (cd sdroot && zip -qr "../out/${ZIP_NAME}" .)
+          echo "zip_name=${ZIP_NAME}" >> "$GITHUB_OUTPUT"
+          echo "--- sd layout ---"
+          unzip -l "out/${ZIP_NAME}"
 
-      - name: Download united zip
-        if: steps.tagcheck.outputs.exists == 'false'
-        uses: actions/download-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: ${{ needs.build.outputs.zip_name }}
-
-      - name: Download toolbox NRO
-        if: steps.tagcheck.outputs.exists == 'false'
-        uses: actions/download-artifact@v4
-        with:
-          name: grid0plus-toolbox-nro
+          name: ${{ steps.pack.outputs.zip_name }}
+          path: out/
+          if-no-files-found: error
 
       - name: Create release
-        if: steps.tagcheck.outputs.exists == 'false'
+        # Nothing shipped changed (docs, workflows): no new release.
+        if: >-
+          github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+          needs.plan.outputs.changed == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ needs.build.outputs.app_version }}
-          name: ${{ needs.build.outputs.release_name }}
+          tag_name: ${{ env.TAG }}
+          name: ${{ needs.plan.outputs.release_name }}
           files: |
-            ${{ needs.build.outputs.zip_name }}
-            grid0plus-toolbox.nro
+            out/${{ steps.pack.outputs.zip_name }}
+            out/grid0plus-toolbox.nro
           generate_release_notes: true
