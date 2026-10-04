@@ -12,7 +12,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 
 APP_TITLE   := sys-GRID0+
 APP_AUTHOR  := sys-GRID0+ contributors
-APP_VERSION := 1.0.1
+APP_VERSION := beta-0.8
 TARGET      := sys-GRID0+
 BUILD       := build
 SOURCES     := source
