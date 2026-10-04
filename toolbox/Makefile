@@ -23,8 +23,7 @@ APP_TITLE   := GRID0+ Toolbox
 APP_AUTHOR  := GRID0+
 # Keep in lockstep with source/version.h (GRID0PLUS_VERSION_*) and the GitHub
 # release tag (vX.Y.Z), the updater compares this against GitHub releases.
-# 0.7.1: new icon.
-APP_VERSION := 0.7.1
+APP_VERSION := 0.8.0
 APP_ICON    := icon.jpg
 
 #---------------------------------------------------------------------------------
@@ -41,7 +40,7 @@ CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 ASFLAGS := -g $(ARCH)
 LDFLAGS  = -specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-LIBS := -lnx
+LIBS := -lminizip -lz -lnx
 
 #---------------------------------------------------------------------------------
 LIBDIRS := $(PORTLIBS) $(LIBNX)

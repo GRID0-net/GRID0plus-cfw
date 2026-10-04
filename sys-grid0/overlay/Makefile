@@ -1,4 +1,4 @@
-# sys-GRID+ Ultrahand/Tesla overlay
+# sys-GRID0+ Ultrahand/Tesla overlay
 .SUFFIXES:
 
 ifeq ($(strip $(DEVKITPRO)),)
@@ -10,10 +10,10 @@ endif
 TOPDIR := $(patsubst %/,%,$(dir $(abspath $(firstword $(MAKEFILE_LIST)))))
 include $(DEVKITPRO)/libnx/switch_rules
 
-APP_TITLE   := sys-GRID+
-APP_AUTHOR  := sys-GRID+ contributors
+APP_TITLE   := sys-GRID0+
+APP_AUTHOR  := sys-GRID0+ contributors
 APP_VERSION := 1.0.1
-TARGET      := sys-GRID+
+TARGET      := sys-GRID0+
 BUILD       := build
 SOURCES     := source
 INCLUDES    := source include
@@ -25,7 +25,7 @@ ARCH := -march=armv8-a+simd+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS := -g -Wall -O2 -ffunction-sections -fdata-sections -flto \
 	-fuse-linker-plugin -fomit-frame-pointer -fno-strict-aliasing $(ARCH) $(DEFINES)
 CFLAGS += $(INCLUDE) -D__SWITCH__ -DAPP_VERSION="\"$(APP_VERSION)\"" \
-	-DUI_OVERRIDE_PATH="\"/config/sys-GRID+/overlay/\"" \
+	-DUI_OVERRIDE_PATH="\"/config/sys-GRID0+/overlay/\"" \
 	-DUSE_EXCEPTION_WRAP=1 -D_FORTIFY_SOURCE=2
 CXXFLAGS := $(CFLAGS) -std=gnu++23 -fno-exceptions -fno-rtti \
 	-fno-unwind-tables -fno-asynchronous-unwind-tables

@@ -145,12 +145,12 @@ jobs:
         run: |
           make -C sys-grid0 zt-core -j"$(nproc)"
           make -C sys-grid0 bundle -j"$(nproc)"
-          ls -l sys-grid0/dist/sys-GRID+.zip
+          ls -l sys-grid0/dist/sys-GRID0+.zip
 
       - uses: actions/upload-artifact@v4
         with:
           name: sysmodule-bundle
-          path: sys-grid0/dist/sys-GRID+.zip
+          path: sys-grid0/dist/sys-GRID0+.zip
           if-no-files-found: error
 
   package:
@@ -187,8 +187,8 @@ jobs:
         run: |
           ZIP_NAME="GRID0-cfw-${TAG}.zip"
           rm -rf sdroot && mkdir sdroot
-          if [ -f "new/sys-GRID+.zip" ]; then
-            unzip -q "new/sys-GRID+.zip" -d sdroot
+          if [ -f "new/sys-GRID0+.zip" ]; then
+            unzip -q "new/sys-GRID0+.zip" -d sdroot
           else
             # The previous release's sysmodule files: its zip minus the NRO.
             unzip -q previous/GRID0-cfw-*.zip -d sdroot

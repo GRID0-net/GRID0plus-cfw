@@ -327,7 +327,7 @@ class MainGui final : public tsl::Gui {
 public:
     tsl::elm::Element *createUI() override
     {
-        auto *frame = new tsl::elm::OverlayFrame("sys-GRID+", APP_VERSION);
+        auto *frame = new tsl::elm::OverlayFrame("sys-GRID0+", APP_VERSION);
         auto *list = new tsl::elm::List();
 
         list->addItem(new tsl::elm::CategoryHeader("Connection"));

@@ -11,43 +11,16 @@
 #include <sys/stat.h>
 #include <switch.h>
 
-// Releases come straight from GitHub's public API for this repository.
-// build.yml cuts one release per toolbox version, tagged v<APP_VERSION>, with
-// the SD zip and grid0plus-toolbox.nro attached; the updater takes the .nro.
-// Until the repository was public this went through GRID0+'s own
-// /updates/latest relay, which held a GitHub token.
+#include "minizip/unzip.h"
+
 #define RELEASES_HOST "api.github.com"
 #define RELEASES_PATH "/repos/GRID0-net/GRID0plus-cfw/releases/latest"
-#define RELEASE_ASSET "grid0plus-toolbox.nro"
-
-#define LEGACY_NRO_FILE "sdmc:/switch/grid0plus-toolbox.nro"
-#define LEGACY_TMP_FILE "sdmc:/switch/grid0plus-toolbox.nro.new"
-
-static char s_selfNro[512] = {0};
-static char s_selfTmp[520] = {0};
+#define RELEASE_ZIP_FMT "GRID0-cfw-v%d.%d.%d.zip"
+#define UPDATE_ZIP_TMP "sdmc:/switch/grid0plus-update.zip"
 
 void update_set_self_path(const char *argv0) {
-    if (!argv0 || !*argv0) return;
-    size_t n = strlen(argv0);
-    // Leave room for the "sdmc:" prefix the '/'-prefixed branch below may add,
-    // plus the terminator, so the snprintf into s_selfNro can never truncate.
-    if (n < 5 || n >= sizeof(s_selfNro) - 6) return;
-    if (strcasecmp(argv0 + n - 4, ".nro") != 0) return;
-
-    if (strncmp(argv0, "sdmc:/", 6) == 0)
-        snprintf(s_selfNro, sizeof(s_selfNro), "%s", argv0);
-    else if (argv0[0] == '/')
-        snprintf(s_selfNro, sizeof(s_selfNro), "sdmc:%s", argv0);
-    else
-        return;
-
-    // The temp file lands next to the target so the final rename()/copy never
-    // crosses a filesystem/volume boundary.
-    snprintf(s_selfTmp, sizeof(s_selfTmp), "%s.new", s_selfNro);
+    (void)argv0;
 }
-
-static const char *selfNroPath(void) { return s_selfNro[0] ? s_selfNro : LEGACY_NRO_FILE; }
-static const char *selfTmpPath(void) { return s_selfTmp[0] ? s_selfTmp : LEGACY_TMP_FILE; }
 
 static char s_downloadUrl[512] = {0};
 static long s_downloadSize = 0;
@@ -60,9 +33,6 @@ static void progressRelay(long received, long total) {
     if (s_progressCb) s_progressCb(GRID0PLUS_UPDATE_PHASE_DOWNLOAD, received, total);
 }
 
-// Finds a JSON string value for `key` (e.g. "\"tag_name\""), tolerating
-// optional whitespace around ':'. Returns a pointer just past the opening
-// quote, or NULL.
 static char *jsonStringValue(const char *haystack, const char *key) {
     char *p = strstr(haystack, key);
     if (!p) return NULL;
@@ -88,9 +58,11 @@ static bool parseReleaseJson(const char *json, int *maj, int *min, int *patch,
     if (*tp == '.') tp++;
     *patch = (int)strtol(tp, NULL, 10);
 
-    // A release carries several assets (the SD zip too), so find the .nro's
-    // own entry: its size and download URL follow its name in the object.
-    char *asset = strstr(json, "\"name\":\"" RELEASE_ASSET "\"");
+    char assetName[64];
+    snprintf(assetName, sizeof(assetName), RELEASE_ZIP_FMT, *maj, *min, *patch);
+    char key[80];
+    snprintf(key, sizeof(key), "\"name\":\"%s\"", assetName);
+    char *asset = strstr(json, key);
     if (!asset) return false;
     char *sp = strstr(asset, "\"size\":");
     if (!sp) return false;
@@ -118,7 +90,6 @@ Grid0plusUpdate update_check(void) {
     size_t len = 0;
     int status = 0;
     unsigned char *body = NULL;
-    // One retry: the first request after launch can race DNS/network bring-up.
     for (int attempt = 0; attempt < 2 && !body; attempt++) {
         body = net_https_get(RELEASES_HOST, 443, RELEASES_PATH, &len, &status);
         if (!body && attempt == 0) svcSleepThread(1000000000ULL);
@@ -156,28 +127,93 @@ Grid0plusUpdate update_check(void) {
     return u;
 }
 
-// Overwrites dst with src's contents without removing dst first (works even
-// if dst can't be unlinked but can still be opened for writing).
-static bool copyOver(const char *src, const char *dst) {
-    FILE *in = fopen(src, "rb");
-    if (!in) return false;
-    if (s_progressCb) s_progressCb(GRID0PLUS_UPDATE_PHASE_INSTALL, 0, s_progressTotal);
-    FILE *out = fopen(dst, "wb");
-    if (!out) { int e = errno; fclose(in); errno = e; return false; }
+static bool zipPathSafe(const char *name) {
+    if (!name || !*name) return false;
+    if (name[0] == '/' || name[0] == '\\') return false;
+    if (strstr(name, "..")) return false;
+    return true;
+}
 
-    char buf[16384];
-    size_t n;
-    long copied = 0;
-    bool ok = true;
-    int err = 0;
-    while ((n = fread(buf, 1, sizeof(buf), in)) > 0) {
-        if (fwrite(buf, 1, n, out) != n) { err = errno; ok = false; break; }
-        copied += (long)n;
-        if (s_progressCb) s_progressCb(GRID0PLUS_UPDATE_PHASE_INSTALL, copied, s_progressTotal);
+static bool mkdirParents(const char *path) {
+    char tmp[1024];
+    size_t n = strlen(path);
+    if (n == 0 || n >= sizeof(tmp)) return false;
+    memcpy(tmp, path, n + 1);
+    for (size_t i = 1; i < n; i++) {
+        if (tmp[i] == '/') {
+            tmp[i] = '\0';
+            mkdir(tmp, 0777);
+            tmp[i] = '/';
+        }
     }
-    fclose(in);
-    if (fclose(out) != 0) { if (ok) err = errno; ok = false; }
-    if (!ok) errno = err;
+    return true;
+}
+
+static bool extractZip(const char *zipPath, const char *destRoot) {
+    unzFile uf = unzOpen(zipPath);
+    if (!uf) return false;
+
+    unz_global_info gi;
+    bool ok = unzGetGlobalInfo(uf, &gi) == UNZ_OK;
+    char buf[16384];
+    long done = 0;
+
+    for (uLong i = 0; ok && i < gi.number_entry; i++) {
+        unz_file_info fi;
+        char name[512];
+        if (unzGetCurrentFileInfo(uf, &fi, name, sizeof(name), NULL, 0, NULL, 0) != UNZ_OK) {
+            ok = false;
+            break;
+        }
+        if (!zipPathSafe(name)) {
+            ok = false;
+            break;
+        }
+        size_t nl = strlen(name);
+        bool isDir = nl > 0 && (name[nl - 1] == '/' || name[nl - 1] == '\\');
+
+        char out[1024];
+        int w = snprintf(out, sizeof(out), "%s/%s", destRoot, name);
+        if (w <= 0 || (size_t)w >= sizeof(out)) {
+            ok = false;
+            break;
+        }
+
+        if (isDir) {
+            mkdir(out, 0777);
+        } else {
+            if (!mkdirParents(out)) {
+                ok = false;
+                break;
+            }
+            if (unzOpenCurrentFile(uf) != UNZ_OK) {
+                ok = false;
+                break;
+            }
+            FILE *f = fopen(out, "wb");
+            if (!f) {
+                unzCloseCurrentFile(uf);
+                ok = false;
+                break;
+            }
+            int r;
+            while ((r = unzReadCurrentFile(uf, buf, sizeof(buf))) > 0) {
+                if (fwrite(buf, 1, (size_t)r, f) != (size_t)r) {
+                    ok = false;
+                    break;
+                }
+                done += r;
+                if (s_progressCb) s_progressCb(GRID0PLUS_UPDATE_PHASE_INSTALL, done, s_progressTotal);
+            }
+            if (r < 0) ok = false;
+            fclose(f);
+            unzCloseCurrentFile(uf);
+        }
+
+        if (ok && i + 1 < gi.number_entry && unzGoToNextFile(uf) != UNZ_OK) ok = false;
+    }
+
+    unzClose(uf);
     return ok;
 }
 
@@ -188,21 +224,17 @@ Grid0plusUpdateResult update_apply(long expectedSize, Grid0plusUpdateProgressFn 
     s_progressCb = onProgress;
     s_progressTotal = expected;
 
-    FILE *f = fopen(selfTmpPath(), "wb");
-    if (!f) {
-        mkdir("sdmc:/switch", 0777);
-        f = fopen(selfTmpPath(), "wb");
-    }
-    if (!f) { grid0plus_trace("update: could not create .new file"); return GRID0PLUS_UPDATE_WRITE_FAIL; }
+    mkdir("sdmc:/switch", 0777);
+    FILE *f = fopen(UPDATE_ZIP_TMP, "wb");
+    if (!f) return GRID0PLUS_UPDATE_WRITE_FAIL;
 
-    if (!net_ready()) { fclose(f); return GRID0PLUS_UPDATE_NET_FAIL; }
+    if (!net_ready()) { fclose(f); remove(UPDATE_ZIP_TMP); return GRID0PLUS_UPDATE_NET_FAIL; }
 
     char hostPort[256] = {0}, path[1024] = {0};
     if (sscanf(s_downloadUrl, "https://%255[^/]%1023s", hostPort, path) < 2) {
-        fclose(f); remove(selfTmpPath());
+        fclose(f); remove(UPDATE_ZIP_TMP);
         return GRID0PLUS_UPDATE_NET_FAIL;
     }
-    // A download URL may name its port explicitly; a bare host is 443.
     char host[256] = {0};
     int port = 443;
     char *colon = strrchr(hostPort, ':');
@@ -221,69 +253,20 @@ Grid0plusUpdateResult update_apply(long expectedSize, Grid0plusUpdateProgressFn 
     long len = net_https_get_to_file(host, port, path, f, &status, onProgress ? progressRelay : NULL);
     fclose(f);
 
-    if (len == -2) { grid0plus_trace("update: write to .new interrupted (SD full?)"); remove(selfTmpPath()); return GRID0PLUS_UPDATE_WRITE_FAIL; }
-    if (len < 0)   { remove(selfTmpPath()); return GRID0PLUS_UPDATE_NET_FAIL; }
-    if (status != 200 || len < 4096) { remove(selfTmpPath()); return GRID0PLUS_UPDATE_NET_FAIL; }
-    if (expected > 0 && len != expected) { remove(selfTmpPath()); return GRID0PLUS_UPDATE_SIZE_FAIL; }
+    if (len == -2) { remove(UPDATE_ZIP_TMP); return GRID0PLUS_UPDATE_WRITE_FAIL; }
+    if (len < 0)   { remove(UPDATE_ZIP_TMP); return GRID0PLUS_UPDATE_NET_FAIL; }
+    if (status != 200 || len < 4096) { remove(UPDATE_ZIP_TMP); return GRID0PLUS_UPDATE_NET_FAIL; }
+    if (expected > 0 && len != expected) { remove(UPDATE_ZIP_TMP); return GRID0PLUS_UPDATE_SIZE_FAIL; }
     fsdevCommitDevice("sdmc");
 
-    // romfsInit() keeps an FS handle open on the .nro this app is running
-    // from for as long as the session lives (romfs contents are read on
-    // demand, the cert stub files, in our case). That's exactly the file
-    // the update needs to replace, so it has to be released first or every
-    // attempt below fails no matter what the SD card allows.
     romfsExit();
-    grid0plus_trace("update: romfs released for replacement");
 
-    bool placed = false;
-
-    // 1) Overwrite in place without removing first.
-    if (copyOver(selfTmpPath(), selfNroPath())) {
-        placed = true;
-        remove(selfTmpPath());
-        grid0plus_trace("update: replaced in place");
-    }
-
-    // 2) remove + rename.
-    if (!placed) {
-        remove(selfNroPath());
-        if (rename(selfTmpPath(), selfNroPath()) == 0) {
-            placed = true;
-            grid0plus_trace("update: replaced via rename");
-        } else if (copyOver(selfTmpPath(), selfNroPath())) {
-            placed = true;
-            remove(selfTmpPath());
-            grid0plus_trace("update: replaced via copy after remove");
-        }
-    }
-
-    // 3) Last resort: the historical fixed path, so the user at least has
-    //    the update on the card even if it needs to be moved by hand.
-    if (!placed && strcmp(selfNroPath(), LEGACY_NRO_FILE) != 0) {
-        mkdir("sdmc:/switch", 0777);
-        if (copyOver(selfTmpPath(), LEGACY_NRO_FILE)) {
-            placed = true;
-            remove(selfTmpPath());
-            grid0plus_trace("update: WARN target locked, wrote to switch/grid0plus-toolbox.nro instead");
-        }
-    }
-
-    if (!placed) {
-        remove(selfTmpPath());
-        grid0plus_trace("update: ERROR could not write the update anywhere");
-        romfsInit();
-        return GRID0PLUS_UPDATE_WRITE_FAIL;
-    }
+    bool placed = extractZip(UPDATE_ZIP_TMP, "sdmc:/");
 
     romfsInit();
-
-    // Clean up an orphan left by a hypothetical earlier fixed-path install,
-    // but only if we didn't just write to that exact path ourselves.
-    if (strcmp(selfNroPath(), LEGACY_NRO_FILE) != 0) {
-        remove(LEGACY_NRO_FILE);
-        remove(LEGACY_TMP_FILE);
-    }
-
+    remove(UPDATE_ZIP_TMP);
     fsdevCommitDevice("sdmc");
+
+    if (!placed) return GRID0PLUS_UPDATE_WRITE_FAIL;
     return GRID0PLUS_UPDATE_OK;
 }

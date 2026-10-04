@@ -811,7 +811,18 @@ namespace ztnx {
                                     fs::OpenMode_Read))) {
             fs::CloseFile(saved_networks);
         } else {
-            const ams::Result r = fs::CreateFile(SavedNetworksPath, 0);
+                        static const char kDefaultNetworks[] = "[GRID0]\n"
+                                                   "nwid = 8bd5124fd68185ec\n";
+            ams::Result r = fs::CreateFile(SavedNetworksPath, sizeof(kDefaultNetworks) - 1);
+            if (R_SUCCEEDED(r)) {
+                fs::FileHandle w;
+                r = fs::OpenFile(std::addressof(w), SavedNetworksPath, fs::OpenMode_Write);
+                if (R_SUCCEEDED(r)) {
+                    fs::WriteFile(w, 0, kDefaultNetworks, sizeof(kDefaultNetworks) - 1,
+                                  fs::WriteOption::Flush);
+                    fs::CloseFile(w);
+                }
+            }
             ok &= R_SUCCEEDED(r) || fs::ResultPathAlreadyExists::Includes(r);
         }
 

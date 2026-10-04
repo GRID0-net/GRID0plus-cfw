@@ -2,8 +2,8 @@
 //
 // On demand (when the user selects "Check for updates"), queries GitHub's
 // releases API, compares the tag's semver against GRID0PLUS_VERSION_*, and if
-// newer downloads the .nro release asset and replaces the file this app is
-// currently running from.
+// newer downloads the release's SD zip and extracts it over the SD card, so
+// the sysmodule, overlay and toolbox all update together.
 #ifndef GRID0PLUS_UPDATE_H
 #define GRID0PLUS_UPDATE_H
 
@@ -12,7 +12,7 @@
 typedef struct {
     bool available;
     int maj, min, patch;
-    long size;   // expected .nro size, for a post-download integrity check
+    long size;   // expected zip size, for a post-download integrity check
     // 0 when the check completed (available says whether there is an update);
     // otherwise a NET_ERR_* code or the HTTP status the server answered with.
     int error;
@@ -32,9 +32,9 @@ typedef enum {
 
 typedef void (*Grid0plusUpdateProgressFn)(Grid0plusUpdatePhase phase, long done, long total);
 
-// Path of the .nro currently running (hbmenu passes it in argv[0]), this is
-// the file a successful update replaces. Call once at startup, before any
-// update check. Safe to call with NULL/empty (falls back to a fixed path).
+// Kept for API compatibility; the zip carries the toolbox NRO at its
+// standard path, so the running location no longer needs tracking. Call once
+// at startup, before any update check. Safe to call with NULL/empty.
 void update_set_self_path(const char *argv0);
 
 // Queries GitHub for the latest release. Managed sockets/SSL internally.
