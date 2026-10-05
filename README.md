@@ -1,8 +1,8 @@
 ![GRID0+ cfw](img/banner.png)
 
 # GRID0+ cfw
-[![License1](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE-MIT.txt)
-[![License2](https://img.shields.io/badge/License-MPLv2-blue.svg)](LICENSE-MPL-2.0.txt)
+[![License1](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE-MIT)
+[![License2](https://img.shields.io/badge/License-MPLv2-blue.svg)](LICENSE-MPL-2.0)
 [![Chat on Discord](https://img.shields.io/badge/Discord-5865f2?logo=discord&logoColor=white)](https://discordapp.com/invite/splatfest)
 
 **Play Switch games online with friends over a virtual LAN.<br>
