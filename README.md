@@ -1,10 +1,39 @@
-![GRID0 cfw](img/banner.png)
+![GRID0+ cfw](img/banner.png)
 
-# GRID0 cfw
+# GRID0+ cfw
+[![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE.txt)
+[![Chat on Discord](https://img.shields.io/badge/Discord-5865f2?logo=discord&logoColor=white)](https://discordapp.com/invite/splatfest)
 
-the switch side of GRID0. sysmodule + toolbox app, one repo.
+**Play Switch games online with friends over a virtual LAN.<br>
+Custom Firm-Ware (cfw) build for Switch 1, for Modded Switch Users.**
 
-- `sys-grid0/` ZeroTier ported to the switch as a sysmodule.
-- `toolbox/` the GRID0+ toolbox homebrew app.
+<sub>[PLACEHOLDER: **GRID0+:** Replaces NSO functionality for online matchmaking, Splatfests, and in game progression]</sub><br>
+<sub>**GRID0:** Replaces the old LAN-play relays with better stability, faster speeds, and an easier setup.</sub><br>
+<sub>Works for cross-play with unbanned switch users and emulator users. Runs on ZeroTier. More info at [GRID0](https://github.com/GRID0-net/GRID0).</sub>
 
-CI (`.github/workflows/build.yml`) builds only the side that changed and takes the other from the latest release, then packs one SD zip. A new toolbox version releases as `v<version>`; a sysmodule-only change releases as `v<version>-sys.<run>`.
+
+## Setup Guide
+
+Runs directly on the console as a background sysmodule. No PC or phone required while playing.
+
+1. Download the latest release from the **[GRID0+ cfw](https://github.com/GRID0-net/GRID0plus-cfw/)** repository.
+2. Extract the archive to the root of your SD card.
+
+[image: the SD card root with the extracted sys-GRID0 folders in place]
+
+**GRID0:**
+3. Reboot into Atmosphere, (temporary step) Currently the network id isnt included with the release, so in ultrahand, insert the following network id on the sys-zerotier page (name is also not yet updated) : 8bd5124fd68185ec
+4. Verify connection status using the Tesla (or Ultrahand) overlay menu.
+
+[image: the Tesla overlay open on the Switch showing the sys-GRID0 connection status]
+
+**GRID0+:**
+3. Reboot into Atmosphere, open the HomeBrew Menu (Album), open the GRID0+ Toolbox and select Change to GRID0+ mode.
+4. After your switch restarts, head to Settings > Users > Add A User > Not With Me > Yes, Had an Account > Link Account > Sign Into Your GRID0+ account using your Discord username and password from the bot.
+5. Verify connection status using the Tesla (or Ultrahand) overlay menu.
+
+[image: the Tesla overlay open on the Switch showing the sys-GRID0 connection status]
+
+---
+
+<sub>Built by 3 humans with limited AI assistance, tested on real Switches over many days and restless nights.
