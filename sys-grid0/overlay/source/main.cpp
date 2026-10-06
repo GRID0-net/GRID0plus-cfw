@@ -19,6 +19,11 @@ constexpr const char *ConfigDir = "sdmc:/config/sys-GRID+/";
 constexpr const char *ConfigPath = "sdmc:/config/sys-GRID+/config.ini";
 constexpr const char *NetworksPath = "sdmc:/config/sys-GRID+/networks.ini";
 constexpr const char *StatusPath = "sdmc:/config/sys-GRID+/status.txt";
+constexpr const char *ToolboxConfigPath = "sdmc:/GRID0plus/config.cfg";
+constexpr const char *HostsSysmmcPath = "sdmc:/atmosphere/hosts/sysmmc.txt";
+constexpr const char *HostsEmummcPath = "sdmc:/atmosphere/hosts/emummc.txt";
+constexpr const char *HostsMark = "GRID0PLUS NETWORK - Atmosphere DNS-MITM";
+constexpr const char *HostsLegacyMark = "SWITCHNET NETWORK - Atmosphere DNS-MITM";
 constexpr const char *BootFlag =
     "sdmc:/atmosphere/contents/4200000000005A54/flags/boot2.flag";
 constexpr const char *DisabledBootFlag =
@@ -78,6 +83,45 @@ bool FileExists(const char *path)
 {
     struct stat st = {};
     return ::stat(path, &st) == 0;
+}
+
+bool FileContains(const char *path, const char *mark)
+{
+    FILE *file = std::fopen(path, "rb");
+    if (file == nullptr) { return false; }
+    std::string content;
+    char buf[4096];
+    size_t n;
+    while ((n = std::fread(buf, 1, sizeof(buf), file)) > 0) { content.append(buf, n); }
+    std::fclose(file);
+    return content.find(mark) != std::string::npos;
+}
+
+bool Grid0PlusModeActive()
+{
+    return FileContains(HostsSysmmcPath, HostsMark) ||
+           FileContains(HostsEmummcPath, HostsMark) ||
+           FileContains(HostsSysmmcPath, HostsLegacyMark) ||
+           FileContains(HostsEmummcPath, HostsLegacyMark);
+}
+
+std::string ToolboxServerIp()
+{
+    FILE *file = std::fopen(ToolboxConfigPath, "r");
+    if (file == nullptr) { return {}; }
+    char line[256];
+    std::string result;
+    while (std::fgets(line, sizeof(line), file) != nullptr) {
+        if (std::strncmp(line, "server_ip=", 10) != 0) { continue; }
+        const char *p = line + 10;
+        const char *end = p + std::strlen(p);
+        while (end > p && (end[-1] == '\n' || end[-1] == '\r' ||
+                           end[-1] == ' ' || end[-1] == '\t')) { --end; }
+        result.assign(p, static_cast<size_t>(end - p));
+        break;
+    }
+    std::fclose(file);
+    return result;
 }
 
 bool ConfigSwitch(const char *key, bool default_value)
@@ -346,6 +390,12 @@ public:
         });
         list->addItem(enter);
 
+        list->addItem(new tsl::elm::CategoryHeader("GRID0+"));
+        m_plus_mode = new tsl::elm::ListItem("Mode", "Default", true);
+        list->addItem(m_plus_mode);
+        m_plus_server = new tsl::elm::ListItem("Server IP", "Not set", true);
+        list->addItem(m_plus_server);
+
         const std::string selected = SelectedNetwork();
         const std::vector<std::string> sections = ult::parseSectionsFromIni(NetworksPath);
         bool have_saved = false;
@@ -436,12 +486,19 @@ private:
         m_address->setValue(address.empty() || address.rfind("0.0.0.0", 0) == 0
                                 ? "Not assigned" : address);
         m_active->setValue(IsHexNetworkId(network) ? UpperHex(network) : "None");
+        if (m_plus_mode != nullptr) {
+            m_plus_mode->setValue(Grid0PlusModeActive() ? "GRID0+" : "Default");
+            const std::string server_ip = ToolboxServerIp();
+            m_plus_server->setValue(server_ip.empty() ? "Not set" : server_ip);
+        }
     }
 
     u64 m_last_refresh = 0;
     tsl::elm::ListItem *m_status = nullptr;
     tsl::elm::ListItem *m_address = nullptr;
     tsl::elm::ListItem *m_active = nullptr;
+    tsl::elm::ListItem *m_plus_mode = nullptr;
+    tsl::elm::ListItem *m_plus_server = nullptr;
 };
 
 class Overlay final : public tsl::Overlay {
