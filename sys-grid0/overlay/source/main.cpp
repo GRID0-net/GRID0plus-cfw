@@ -367,6 +367,54 @@ private:
     tsl::elm::CategoryHeader *m_result = nullptr;
 };
 
+class AdvancedGui final : public tsl::Gui {
+public:
+    tsl::elm::Element *createUI() override
+    {
+        auto *frame = new tsl::elm::OverlayFrame("Advanced", "Toggles apply on reboot");
+        auto *list = new tsl::elm::List();
+
+        const bool module_enabled = FileExists(BootFlag) || !FileExists(DisabledBootFlag);
+        auto *module = new tsl::elm::ToggleListItem("sys-GRID+", module_enabled);
+        module->setStateChangedListener([](bool state) { SetBootEnabled(state); });
+        list->addItem(module);
+
+        auto *bsd = new tsl::elm::ToggleListItem(
+            "BSD LAN bridge", ConfigSwitch("bsd_mitm", true));
+        bsd->setStateChangedListener([](bool state) {
+            ult::setIniFileValue(ConfigPath, "sys-GRID+", "bsd_mitm", state ? "1" : "0");
+        });
+        list->addItem(bsd);
+
+        auto *nifm = new tsl::elm::ToggleListItem(
+            "NIFM IP bridge", ConfigSwitch("nifm_mitm", true));
+        nifm->setStateChangedListener([](bool state) {
+            ult::setIniFileValue(ConfigPath, "sys-GRID+", "nifm_mitm", state ? "1" : "0");
+        });
+        list->addItem(nifm);
+
+        auto *debug = new tsl::elm::ToggleListItem(
+            "Detailed diagnostics", ConfigSwitch("debug_logging", false));
+        debug->setStateChangedListener([](bool state) {
+            ult::setIniFileValue(ConfigPath, "sys-GRID+", "debug_logging", state ? "1" : "0");
+        });
+        list->addItem(debug);
+
+        frame->setContent(list);
+        return frame;
+    }
+
+    bool handleInput(u64 keys_down, u64, const HidTouchState &,
+                     HidAnalogStickState, HidAnalogStickState) override
+    {
+        if (keys_down & KEY_B) {
+            tsl::goBack();
+            return true;
+        }
+        return false;
+    }
+};
+
 class MainGui final : public tsl::Gui {
 public:
     tsl::elm::Element *createUI() override
@@ -419,32 +467,13 @@ public:
             list->addItem(item);
         }
 
-        list->addItem(new tsl::elm::CategoryHeader("Services (next reboot)"));
-        const bool module_enabled = FileExists(BootFlag) || !FileExists(DisabledBootFlag);
-        auto *module = new tsl::elm::ToggleListItem("sys-GRID+", module_enabled);
-        module->setStateChangedListener([](bool state) { SetBootEnabled(state); });
-        list->addItem(module);
-
-        auto *bsd = new tsl::elm::ToggleListItem(
-            "BSD LAN bridge", ConfigSwitch("bsd_mitm", true));
-        bsd->setStateChangedListener([](bool state) {
-            ult::setIniFileValue(ConfigPath, "sys-GRID+", "bsd_mitm", state ? "1" : "0");
+        auto *advanced = new tsl::elm::ListItem("Advanced");
+        advanced->setClickListener([](u64 keys) {
+            if (!(keys & KEY_A)) { return false; }
+            tsl::changeTo<AdvancedGui>();
+            return true;
         });
-        list->addItem(bsd);
-
-        auto *nifm = new tsl::elm::ToggleListItem(
-            "NIFM IP bridge", ConfigSwitch("nifm_mitm", true));
-        nifm->setStateChangedListener([](bool state) {
-            ult::setIniFileValue(ConfigPath, "sys-GRID+", "nifm_mitm", state ? "1" : "0");
-        });
-        list->addItem(nifm);
-
-        auto *debug = new tsl::elm::ToggleListItem(
-            "Detailed diagnostics", ConfigSwitch("debug_logging", false));
-        debug->setStateChangedListener([](bool state) {
-            ult::setIniFileValue(ConfigPath, "sys-GRID+", "debug_logging", state ? "1" : "0");
-        });
-        list->addItem(debug);
+        list->addItem(advanced);
 
         frame->setContent(list);
         RefreshStatus();
