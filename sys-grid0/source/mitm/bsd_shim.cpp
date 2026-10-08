@@ -1304,6 +1304,10 @@ namespace ztnx::mitm {
     }
 
     bool BsdShim::ShouldMitm(const ams::sm::MitmProcessInfo &client) {
+        // Title takeover keeps the game's program id: Toolbox launched through
+        // Splatoon was being treated as its nnSdk client. Homebrew must keep
+        // normal BSD/NIFM semantics regardless of the borrowed title id.
+        if (client.override_status.IsHbl()) return false;
         /* Counted, because the gap between this and OnNeedsToAccept is the one
          * remaining place the failure can hide.
          *

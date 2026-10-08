@@ -127,3 +127,9 @@ This fixes the shutdown ordering; it does not make the memory floor a proof
 that ZeroTier can stay running alongside every other sysmodule. A hardware
 retest is still needed. Source: Atmosphere `stratosphere/sm/source/impl/`
 `sm_service_manager.cpp`, `GetMitmServiceHandleImpl` and `UninstallMitm`.
+
+Homebrew launched through a supported game is excluded from both LAN bridges
+using Atmosphère's homebrew override flag. Title takeover retains the game's
+program ID, so a title allowlist alone also intercepted Toolbox as Splatoon 3.
+The 2026-10-08 report identifies hbloader and Toolbox, with the bridge's boot
+log confirming that incorrect interception.
