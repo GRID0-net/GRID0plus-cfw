@@ -111,7 +111,14 @@ onto the SD card, at the same relative path, when GRID0+ mode is applied
   cannot advance its stable-player counter in an undersized retained lobby.
   The stability check and agreement between the ready/current player counts
   remain intact; asynchronous rejoin success is not forced. These additional
-  sites are verified against the dump but still need a hardware rematch test.
+  sites allowed an undersized rematch on hardware. Version 0.8.2 additionally
+  gates the shared controller at `0x710389F654` on the active Gamesync
+  session’s cached `ebf`: primary at manager+41, secondary at manager+73.
+  While backfill is open it stays in the lobby; GRID0 closes it after the
+  grace window. The original conditional branch, NZCV, count stability and
+  readiness checks remain intact. Four verified alignment spans hold the
+  trampoline, without changing fresh/private lobby minimums. The new
+  server-lock gate still needs a hardware test.
   Regenerate with `python3 tools/make_s3_smallmatch.py [main.flat]`; the optional
   dump verifies every original instruction. A game update needs a new patch.
 - **`bcat_signature_bypass`**, one patch, for the `bcat` sysmodule build
