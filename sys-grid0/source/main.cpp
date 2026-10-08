@@ -372,6 +372,8 @@ namespace ams {
             if (R_FAILED(r)) {
                 ztnx::Trace("psc: Initialize(id=%u) failed 0x%x -- no sleep handling",
                             (unsigned)mid, r.GetValue());
+                g_pm_module->~PmModule();
+                g_pm_module = nullptr;
                 return;
             }
             ztnx::Trace("psc: registered as module id %u", (unsigned)mid);
@@ -380,6 +382,16 @@ namespace ams {
                                           g_psc_thread_stack, sizeof(g_psc_thread_stack),
                                           os::DefaultThreadPriority))) {
                 ztnx::Trace("psc: could not create monitor thread");
+                /* A registered module with no acknowledger can block sleep.
+                 * Finalize unregisters it; a failed unregister must not leave
+                 * this optional process resident in the dependency graph. */
+                const auto finalize_rc = g_pm_module->Finalize();
+                if (R_FAILED(finalize_rc)) {
+                    ztnx::Trace("safe-stop: psc unregister failed rc=%x", finalize_rc.GetValue());
+                    ::svcExitProcess();
+                }
+                g_pm_module->~PmModule();
+                g_pm_module = nullptr;
                 return;
             }
             os::StartThread(std::addressof(g_psc_thread));
@@ -711,6 +723,7 @@ namespace ams {
             StartBsdMitm();
 
             while (!LateInitialize(want_time, want_csrng, want_bsd)) {
+                ztnx::RequireSystemMemoryHeadroom(0, "retrying services");
                 ztnx::Trace("thread: late init failed, retrying in 5s");
                 os::SleepThread(TimeSpan::FromSeconds(5));
             }
@@ -719,7 +732,10 @@ namespace ams {
                 /* Nothing more to do: hold here so the module stays resident
                  * with exactly the sessions the flags selected. */
                 ztnx::Trace("thread: idling (node disabled)");
-                for (;;) { os::SleepThread(TimeSpan::FromSeconds(30)); }
+                for (;;) {
+                    ztnx::RequireSystemMemoryHeadroom(0, "node disabled");
+                    os::SleepThread(TimeSpan::FromSeconds(5));
+                }
             }
 
             /* Blocks until config.ini names a network, writing a template on
@@ -732,6 +748,7 @@ namespace ams {
              * error screen on boot, which is a poor way to find out that the
              * network stack was still coming up. */
             while (!g_port.Initialize(nwid)) {
+                ztnx::RequireSystemMemoryHeadroom(0, "retrying node");
                 ztnx::Trace("thread: Initialize failed, retrying");
                 os::SleepThread(TimeSpan::FromSeconds(5));
             }

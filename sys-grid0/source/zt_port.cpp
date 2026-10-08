@@ -1016,6 +1016,7 @@ namespace ztnx {
                 wroteTemplate = true;
             }
 
+            RequireSystemMemoryHeadroom(0, "waiting for configuration");
             /* No network configured yet. Idle cheaply and look again, so that
              * dropping the file in is all it takes -- and so that
              * a missing config is never a reason to abort a system module. */
@@ -1310,6 +1311,17 @@ namespace ztnx {
 
     bool Port::Initialize(uint64_t nwid)
     {
+        bool complete = false;
+        /* The caller retries failures. A refused arena allocation or failed
+         * join must not strand a socket or overwrite the previous node's
+         * pointer on the next attempt. NAT setup only runs after these steps. */
+        ON_SCOPE_EXIT {
+            if (!complete) {
+                if (m_node != nullptr) { ZT_Node_delete(m_node); m_node = nullptr; }
+                if (m_wireFd >= 0) { ::close(m_wireFd); m_wireFd = -1; }
+                m_wireLocalPort = 0;
+            }
+        };
         m_nwid = nwid;
         m_vnet.reset();
         m_vnet.setEmit(&Port::cbEmit, this);
@@ -1404,6 +1416,7 @@ namespace ztnx {
         }
         this->subscribeBroadcast();
         this->writeStatus(true);
+        complete = true;
         return true;
     }
 

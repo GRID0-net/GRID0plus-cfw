@@ -102,3 +102,16 @@ proxy buffer. The latter is resident even outside Splatoon 2 and is a candidate
 for a future on-demand allocation design; moving it into the current arena
 without accounting for fragmentation would repeat earlier allocation crashes.
 No smaller steady-state footprint is claimed for the safety guard itself.
+
+Failed node startup now releases the ZeroTier node and bound UDP socket before
+retrying, including arena refusal and join failure. The host fault-injection
+tests exercise the real initialization bodies with service/kernel stubs; they
+verify cleanup, not Horizon or ZeroTier behavior. Memory-headroom checks also
+remain active while waiting for configuration and retrying startup, rather
+than only after reaching the run loop.
+
+The optional PSC monitor stays disabled by default. If its worker cannot be
+created after registration, it unregisters and destroys its local object;
+failed unregistration stops the process rather than retaining a power-state
+participant with no thread to acknowledge requests. Console sleep/wake testing
+is still required before enabling this feature.
