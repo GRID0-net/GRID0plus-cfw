@@ -173,6 +173,10 @@ namespace ztnx {
 
     void RequireSystemMemoryHeadroom(size_t extra, const char *phase)
     {
+        // A sampled reserve is not an allocation failure. Stopping a healthy
+        // node below this arbitrary floor stranded an assigned network at 42 s.
+        // Keep the guard for actual identity workspace allocations only.
+        if (extra == 0) return;
         u64 raw = 0;
         if (R_FAILED(svc::GetInfo(std::addressof(raw), svc::InfoType_ResourceLimit,
                                   svc::InvalidHandle, 0)) &&

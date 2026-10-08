@@ -75,13 +75,13 @@ The module shares Horizon's System resource group with essential services.
 itself distinguish physical memory from threads, sessions or events. Keep
 `boot.log` and `uplink.log` when reporting a failure.
 
-Startup and each 2 MiB ZeroTier identity workspace request now require 2 MiB
-of additional free System memory. The run loop checks that safety floor every
-five seconds. Insufficient or unreadable headroom makes the optional module
-exit and release its resources rather than hold its arena indefinitely. LAN
-connectivity stops for that boot; the log records `safe-stop` and the measured
-budget. Failure to release the identity heap also stops the process, and node
-thread creation failure no longer invokes a fatal abort.
+Each 2 MiB ZeroTier identity workspace request requires 2 MiB of additional
+free System memory. Periodic runtime checks only log pressure, restoring the
+previous behavior: on the affected console, the exit threshold stopped a
+working node with an assigned address after 42 seconds. A sampled reserve
+alone does not prove allocation failure. Failure to release the identity heap
+still stops the process, and node thread creation failure no longer invokes a
+fatal abort.
 
 This floor is based on the 2 MiB display reservation seen in earlier fatal
 reports. It is a mitigation, not a guarantee: other processes can allocate
