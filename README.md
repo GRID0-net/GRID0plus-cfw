@@ -24,14 +24,14 @@ Runs directly on the console as a background sysmodule. No PC or phone required 
 [image: the SD card root with the extracted sys-GRID0 folders in place]
 
 **GRID0:**
------
+---
 3. Reboot into Atmosphere, (temporary step) Currently the network id isnt included with the release, so in ultrahand, insert the following network id on the sys-zerotier page (name is also not yet updated) : 8bd5124fd68185ec<br>
 4. Verify connection status using the Tesla (or Ultrahand) overlay menu.
 
 [image: the Tesla overlay open on the Switch showing the sys-GRID0 connection status]
 
 **GRID0+:**
------
+---
 3. Reboot into Atmosphere, open the HomeBrew Menu (Album), open the GRID0+ Toolbox and select Change to GRID0+ mode.<br>
 4. After your switch restarts, head to Settings > Users > Add A User > Not With Me > Yes, Had an Account > Link Account > Sign Into Your GRID0+ account using your Discord username and password from the bot.<br>
 5. Verify connection status using the Tesla (or Ultrahand) overlay menu.
