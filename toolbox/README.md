@@ -104,8 +104,16 @@ onto the SD card, at the same relative path, when GRID0+ mode is applied
   `0x71038A420C`), the minimum-player check that raises
   `MatchSyncDisconnect1` (`0x71032C1C7C`), and the member-count check that
   raises `ShareMemberNumInvalid3` (`0x7103898160`). Each compare is turned
-  into one that always matches. Confirmed on hardware with two consoles,
-  on one network and across two. A game update needs a new patch.
+  into one that always matches. Those three checks were confirmed on hardware
+  with two consoles, on one network and across two. Version 0.8.1 additionally
+  lowers two lobby-controller minimum checks (`0x710389F750`,
+  `0x710389F864`) to two players. The controller defaults to eight and otherwise
+  cannot advance its stable-player counter in an undersized retained lobby.
+  The stability check and agreement between the ready/current player counts
+  remain intact; asynchronous rejoin success is not forced. These additional
+  sites are verified against the dump but still need a hardware rematch test.
+  Regenerate with `python3 tools/make_s3_smallmatch.py [main.flat]`; the optional
+  dump verifies every original instruction. A game update needs a new patch.
 - **`bcat_signature_bypass`**, one patch, for the `bcat` sysmodule build
   `6D9772A7…` that firmware **22.5.0** ships. It replaces the boolean BCAT
   stores from its central RSA verification callback, that callback's own

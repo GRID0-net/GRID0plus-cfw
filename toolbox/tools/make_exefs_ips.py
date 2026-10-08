@@ -19,14 +19,14 @@ NSO_HEADER_SIZE = 0x100
 def main() -> None:
     if len(sys.argv) < 4 or len(sys.argv) % 2 != 0:
         sys.exit(__doc__)
-    out = bytearray(b"PATCH")
-    for rva_s, data_s in zip(sys.argv[2::2], sys.argv[3::2]):
-        rva, data = int(rva_s, 16), bytes.fromhex(data_s)
-        off = rva + NSO_HEADER_SIZE
-        if off >= 1 << 24 or not 0 < len(data) < 1 << 16:
-            sys.exit(f"record out of IPS range: rva={rva_s} len={len(data)}")
-        out += off.to_bytes(3, "big") + len(data).to_bytes(2, "big") + data
-    out += b"EOF"
+    records = [(int(rva, 16) + NSO_HEADER_SIZE, bytes.fromhex(data)) for rva, data in zip(sys.argv[2::2], sys.argv[3::2])]
+    wide = any(off >= 1 << 24 for off, _ in records)
+    out = bytearray(b"IPS32" if wide else b"PATCH")
+    for off, data in records:
+        if not 0 <= off < 1 << 32 or not 0 < len(data) < 1 << 16:
+            sys.exit(f"record out of IPS range: offset={off:x} len={len(data)}")
+        out += off.to_bytes(4 if wide else 3, "big") + len(data).to_bytes(2, "big") + data
+    out += b"EEOF" if wide else b"EOF"
     with open(sys.argv[1], "wb") as f:
         f.write(out)
 
