@@ -206,7 +206,7 @@ jobs:
           echo "zip_name=${ZIP_NAME}" >> "$GITHUB_OUTPUT"
           echo "--- sd layout ---"
           unzip -l "out/${ZIP_NAME}"
-          SYS_ZIP_NAME="sys-GRID0-${TAG}.zip"
+          SYS_ZIP_NAME="sys-GRID0-[NO-GRID0+]-${TAG}.zip"
           rm -rf sysroot && mkdir sysroot
           cp -r sdroot/atmosphere sysroot/
           mkdir -p sysroot/switch/.overlays
