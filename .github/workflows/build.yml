@@ -231,6 +231,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG }}
+          # Installed updaters derive an exact ZIP filename from the numeric
+          # Toolbox version. A -sys.N release has a different filename, so it
+          # must never replace the Toolbox release at /releases/latest.
+          make_latest: ${{ contains(env.TAG, '-sys.') && 'false' || 'true' }}
           name: ${{ needs.plan.outputs.release_name }}
           files: |
             out/${{ steps.pack.outputs.zip_name }}
