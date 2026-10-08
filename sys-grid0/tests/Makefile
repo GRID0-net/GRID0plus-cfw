@@ -30,6 +30,7 @@ run: test_vnet test_nat_support test_system_budget
 	./test_vnet
 	./test_nat_support
 	./test_system_budget
+	python3 test_late_init.py
 
 # The console is aarch64. Unaligned loads and sign-extension differences are the
 # usual surprises; compiling with the cross toolchain catches most of them even

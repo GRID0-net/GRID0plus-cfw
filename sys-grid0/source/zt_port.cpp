@@ -205,7 +205,11 @@ namespace ztnx {
             }
 
             g_genmemAddr = 0;
-            (void)os::SetMemoryHeapSize(0);
+            const auto release_rc = os::SetMemoryHeapSize(0);
+            if (R_FAILED(release_rc)) {
+                Trace("safe-stop: failed identity workspace cleanup rc=%x", release_rc.GetValue());
+                ::svcExitProcess();
+            }
             if (g_genmemFails++ < 3) {
                 Trace("genmem: %u KB unavailable, retrying in 3s", (unsigned)(GenMemSize / 1024));
             }

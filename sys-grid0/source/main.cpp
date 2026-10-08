@@ -611,8 +611,21 @@ namespace ams {
          * do needs to happen early, so we get out of the way and take our
          * sessions once the system has settled. */
         bool LateInitialize(bool want_time, bool want_csrng, bool want_bsd) {
+            bool time_ready = false, csrng_ready = false, bsd_ready = false;
+            bool complete = false;
+            /* Each retry must balance the successful initializations from its
+             * failed attempt. Otherwise service reference counts keep growing
+             * while the system is already short of resources. */
+            ON_SCOPE_EXIT {
+                if (!complete) {
+                    if (bsd_ready) { bsdExit(); }
+                    if (csrng_ready) { csrngExit(); }
+                    if (time_ready) { timeExit(); }
+                }
+            };
             if (want_time) {
                 if (R_FAILED(timeInitialize()))  { return false; }
+                time_ready = true;
                 ztnx::Trace("late: time");
             } else {
                 ztnx::Trace("late: time SKIPPED by config");
@@ -620,6 +633,7 @@ namespace ams {
 
             if (want_csrng) {
                 if (R_FAILED(csrngInitialize())) { return false; }
+                csrng_ready = true;
                 ztnx::Trace("late: csrng");
             } else {
                 ztnx::Trace("late: csrng SKIPPED by config");
@@ -634,6 +648,7 @@ namespace ams {
             if (want_bsd) {
                 if (R_FAILED(bsdInitialize(&BsdConfig, SocketConfig.num_bsd_sessions,
                                            SocketConfig.bsd_service_type))) { return false; }
+                bsd_ready = true;
                 ztnx::Trace("late: bsd");
 
                 if (R_FAILED(socketInitialize(&SocketConfig))) { return false; }
@@ -641,6 +656,7 @@ namespace ams {
             } else {
                 ztnx::Trace("late: bsd/socket SKIPPED by config");
             }
+            complete = true;
             return true;
         }
 
