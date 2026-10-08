@@ -9,8 +9,9 @@
 #   - a sysmodule change without one releases as v<APP_VERSION>-sys.<run>,
 #     which the toolbox's updater reads as the version it already runs, so
 #     consoles are not offered an update for a sysmodule-only release.
-# Each release carries the united zip and the bare grid0plus-toolbox.nro
-# (what the toolbox's self-updater downloads).
+# Each release carries the united zip, the bare grid0plus-toolbox.nro
+# (what the toolbox's self-updater downloads), and a standalone sys-GRID0
+# zip (sysmodule + overlay only, for users avoiding G0+).
 name: Build GRID0-cfw
 
 on:
@@ -205,6 +206,16 @@ jobs:
           echo "zip_name=${ZIP_NAME}" >> "$GITHUB_OUTPUT"
           echo "--- sd layout ---"
           unzip -l "out/${ZIP_NAME}"
+          SYS_ZIP_NAME="sys-GRID0-${TAG}.zip"
+          rm -rf sysroot && mkdir sysroot
+          cp -r sdroot/atmosphere sysroot/
+          mkdir -p sysroot/switch/.overlays
+          cp sdroot/switch/.overlays/*.ovl sysroot/switch/.overlays/ 2>/dev/null || true
+          cp -r sdroot/licenses sysroot/ 2>/dev/null || true
+          (cd sysroot && zip -qr "../out/${SYS_ZIP_NAME}" .)
+          echo "sys_zip_name=${SYS_ZIP_NAME}" >> "$GITHUB_OUTPUT"
+          echo "--- sysmodule layout ---"
+          unzip -l "out/${SYS_ZIP_NAME}"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -223,5 +234,6 @@ jobs:
           name: ${{ needs.plan.outputs.release_name }}
           files: |
             out/${{ steps.pack.outputs.zip_name }}
+            out/${{ steps.pack.outputs.sys_zip_name }}
             out/grid0plus-toolbox.nro
           generate_release_notes: true
