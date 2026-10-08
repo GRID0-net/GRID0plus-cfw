@@ -78,7 +78,9 @@ jobs:
           echo "${FILES}"
           TOOLBOX=false; SYSMODULE=false
           echo "${FILES}" | grep -q '^toolbox/' && TOOLBOX=true
-          echo "${FILES}" | grep -qE '^(sys-grid0/|\.gitmodules)' && SYSMODULE=true
+          # Documentation does not change the module binary. Reuse the newest
+          # published module rather than rebuild it for README updates.
+          echo "${FILES}" | grep -vE '\.md$' | grep -qE '^(sys-grid0/|\.gitmodules)' && SYSMODULE=true
           # Nothing to reuse yet: build both.
           if ! gh release view -R "${{ github.repository }}" >/dev/null 2>&1; then
             TOOLBOX=true; SYSMODULE=true
