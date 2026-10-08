@@ -23,9 +23,13 @@ test_vnet: $(SRC) ../source/net/vnet.hpp ../source/net/net.hpp ../source/net/lif
 test_nat_support: test_nat_support.c ../compat/nat/support.c
 	$(CC) -std=gnu11 -O1 -g -Wall -Wextra -fsanitize=address,undefined -fno-omit-frame-pointer -o $@ $^
 
-run: test_vnet test_nat_support
+test_system_budget: test_system_budget.cpp ../source/system_budget.hpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+run: test_vnet test_nat_support test_system_budget
 	./test_vnet
 	./test_nat_support
+	./test_system_budget
 
 # The console is aarch64. Unaligned loads and sign-extension differences are the
 # usual surprises; compiling with the cross toolchain catches most of them even
@@ -36,5 +40,5 @@ cross:
 	@echo "aarch64 build OK"
 
 clean:
-	rm -f test_vnet test_nat_support
+	rm -f test_vnet test_nat_support test_system_budget
 	rm -rf test_vnet.dSYM

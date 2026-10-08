@@ -559,7 +559,12 @@ namespace ams {
             if (R_FAILED(os::CreateThread(std::addressof(g_nifm_mitm_thread), NifmMitmThreadMain, nullptr,
                                           g_nifm_mitm_thread_stack, sizeof(g_nifm_mitm_thread_stack),
                                           os::DefaultThreadPriority))) {
-                ztnx::Trace("mitm: could not create nifm server thread");
+                ztnx::Trace("mitm: could not create nifm server thread; removing interception");
+                const auto cleanup = sm::mitm::UninstallMitm(sm::ServiceName::Encode("nifm:u"));
+                if (R_FAILED(cleanup)) {
+                    ztnx::Trace("safe-stop: nifm MITM cleanup failed rc=%x", cleanup.GetValue());
+                    ::svcExitProcess();
+                }
                 return;
             }
             os::StartThread(std::addressof(g_nifm_mitm_thread));
@@ -588,8 +593,9 @@ namespace ams {
             if (R_FAILED(os::CreateThread(std::addressof(g_mitm_thread), MitmThreadMain, nullptr,
                                           g_mitm_thread_stack, sizeof(g_mitm_thread_stack),
                                           os::DefaultThreadPriority))) {
-                ztnx::Trace("mitm: could not create server thread");
-                return;
+                ztnx::Trace("mitm: could not create server thread; removing interception");
+                (void)sm::mitm::UninstallMitm(sm::ServiceName::Encode("bsd:u"));
+                ::svcExitProcess();
             }
             os::StartThread(std::addressof(g_mitm_thread));
             ztnx::Trace("mitm: bsd:u registered, relaying");
@@ -682,6 +688,7 @@ namespace ams {
             /* After the flags are known and before anything long-running:
              * psc has to be listening before the first time the user presses
              * the power button, not merely before the node comes online. */
+            ztnx::RequireSystemMemoryHeadroom(0, "startup");
             StartPowerMonitor();
             ztnx::mitm::SetPort(std::addressof(g_port));
             ztnx::mitm::SetNifmPort(std::addressof(g_port));
@@ -726,9 +733,13 @@ namespace ams {
          * that needs a service session -- including the wait for nifm to
          * associate -- now happens on that thread, after the system has had
          * time to finish booting. */
-        R_ABORT_UNLESS(os::CreateThread(std::addressof(g_node_thread), NodeThreadMain, nullptr,
-                                        g_node_thread_stack, NodeThreadStackSize,
-                                        /* priority */ NodeThreadPriority));
+        const Result thread_rc = os::CreateThread(std::addressof(g_node_thread), NodeThreadMain, nullptr,
+                                                  g_node_thread_stack, NodeThreadStackSize,
+                                                  NodeThreadPriority);
+        if (R_FAILED(thread_rc)) {
+            ztnx::Trace("safe-stop: node thread unavailable rc=%x", thread_rc.GetValue());
+            ::svcExitProcess();
+        }
         os::StartThread(std::addressof(g_node_thread));
 
         /* The ldn:u and bsd:u MITM servers are hosted here. Both are installed
@@ -763,7 +774,11 @@ namespace ams {
         }
 
         void InitializeSystemModule() {
-            R_ABORT_UNLESS(sm::Initialize());
+            if (R_FAILED(sm::Initialize())) {
+                constexpr char reason[] = "sys-GRID0 safe-stop: sm initialization failed";
+                ::svcOutputDebugString(reason, sizeof(reason) - 1);
+                ::svcExitProcess();
+            }
             ztnx::Trace("init: sm");
 
             fs::InitializeForSystem();

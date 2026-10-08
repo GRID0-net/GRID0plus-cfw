@@ -273,6 +273,9 @@ namespace ztnx {
      * absent. Lets individual init steps be switched off from the SD card, so
      * bisecting which service session upsets am costs a text edit and a reboot
      * rather than a full rebuild. */
+    // Exit the optional module if a proposed allocation leaves too little
+    // shared-System headroom. Never return null to ZeroTier's hash routine.
+    void RequireSystemMemoryHeadroom(size_t extra, const char *phase);
     bool ConfigFlag(const char *key, bool dflt);
     int  ConfigValue(const char *key, int dflt);
     uint32_t ConfigIpv4(const char *key);   /* 0 when absent or unparseable */

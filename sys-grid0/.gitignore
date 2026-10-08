@@ -36,3 +36,5 @@ build.log
 # Optional game ExeFS experiments
 /exefs/
 /exefs.nsp
+
+/tests/test_system_budget

@@ -67,3 +67,38 @@ The ZeroTier `node/` sources are MPL-2.0. Atmosphère/libstratosphere and the
 other bundled dependencies retain their upstream licenses. The port, shim and
 overlay code should be distributed with the license terms of the project as it
 is released; do not add ZeroTier's separately licensed `libzt` component.
+
+## Resource-pressure safety
+
+The module shares Horizon's System resource group with essential services.
+`am` aborting with 2001-0132 identifies resource exhaustion, but does not by
+itself distinguish physical memory from threads, sessions or events. Keep
+`boot.log` and `uplink.log` when reporting a failure.
+
+Startup and each 2 MiB ZeroTier identity workspace request now require 2 MiB
+of additional free System memory. The run loop checks that safety floor every
+five seconds. Insufficient or unreadable headroom makes the optional module
+exit and release its resources rather than hold its arena indefinitely. LAN
+connectivity stops for that boot; the log records `safe-stop` and the measured
+budget. Failure to release the identity heap also stops the process, and node
+thread creation failure no longer invokes a fatal abort.
+
+This floor is based on the 2 MiB display reservation seen in earlier fatal
+reports. It is a mitigation, not a guarantee: other processes can allocate
+between samples, and another resource kind can still run out. Actual console
+boot, LAN-play and sleep/wake tests are required. The known-bad 1 MiB allocator
+and 128 KiB node stack have not been reinstated, and identity verification
+still uses the protocol-required 2 MiB workspace.
+
+Toolbox updates remain frozen for this module. Install a test module manually
+and only deliberately enable its boot flag; do not restore autostart merely
+to obtain an updated binary.
+
+MITM registration is now undone if its server thread cannot be created, so
+clients are not left waiting on a port with no worker. A linked-build audit
+on 2026-10-08 measured about 1.04 MiB text, 106 KiB data and 2.41 MiB BSS.
+The BSS includes the 1,152 KiB arena, 256 KiB node stack, and 592 KiB Splatoon 2
+proxy buffer. The latter is resident even outside Splatoon 2 and is a candidate
+for a future on-demand allocation design; moving it into the current arena
+without accounting for fragmentation would repeat earlier allocation crashes.
+No smaller steady-state footprint is claimed for the safety guard itself.

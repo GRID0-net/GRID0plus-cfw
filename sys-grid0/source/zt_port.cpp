@@ -4,6 +4,7 @@
  * NOT YET COMPILED. See README.md.
  */
 #include "zt_port.hpp"
+#include "system_budget.hpp"
 #include "mitm/bsd_shim.hpp"
 #include "nat_mapper.hpp"
 
@@ -138,6 +139,34 @@ namespace ztnx {
         return s_anchorMs + (int64_t)((ticks - s_anchorTick) / 19200);
     }
 
+    void RequireSystemMemoryHeadroom(size_t extra, const char *phase)
+    {
+        u64 raw = 0;
+        if (R_FAILED(svc::GetInfo(std::addressof(raw), svc::InfoType_ResourceLimit,
+                                  svc::InvalidHandle, 0)) &&
+            R_FAILED(svc::GetInfo(std::addressof(raw), svc::InfoType_ResourceLimit,
+                                  svc::PseudoHandle::CurrentProcess, 0))) {
+            Trace("safe-stop: %s resource limit unavailable", phase);
+            ::svcExitProcess();
+        }
+        const auto rl = static_cast<svc::Handle>(raw);
+        s64 limit = 0, used = 0;
+        const bool measured =
+            R_SUCCEEDED(svc::GetResourceLimitLimitValue(std::addressof(limit), rl,
+                          svc::LimitableResource_PhysicalMemoryMax)) &&
+            R_SUCCEEDED(svc::GetResourceLimitCurrentValue(std::addressof(used), rl,
+                          svc::LimitableResource_PhysicalMemoryMax));
+        (void)svc::CloseHandle(rl);
+        if (!measured || !MemoryBudgetAllows(limit, used, extra)) {
+            Trace("safe-stop: %s memory used=%lld limit=%lld extra=%llu reserve=%lld bytes",
+                  phase, (long long)used, (long long)limit,
+                  (unsigned long long)extra, (long long)SystemMemoryReserve);
+            // Kernel teardown releases the module, its mappings and sessions.
+            // Idling here would retain its static arena while am needs RAM.
+            ::svcExitProcess();
+        }
+    }
+
     /* ---- ZeroTier's 2 MB identity scratch buffer -------------------------
      *
      * _computeMemoryHardHash() wants ZT_IDENTITY_GEN_MEMORY of scratch. It runs
@@ -168,6 +197,7 @@ namespace ztnx {
          * whole path was introduced to fix. Wait for the memory instead;
          * nothing on the node thread is time-critical. */
         for (;;) {
+            RequireSystemMemoryHeadroom(GenMemSize, "identity workspace");
             if (R_SUCCEEDED(os::SetMemoryHeapSize(GenMemSize)) &&
                 R_SUCCEEDED(os::AllocateMemoryBlock(std::addressof(g_genmemAddr), GenMemSize))) {
                 Trace("genmem: mapped %u KB", (unsigned)(GenMemSize / 1024));
@@ -193,7 +223,11 @@ namespace ztnx {
         /* Shrinking the heap back to zero is what actually returns the pages to
          * the SYSTEM resource limit. Without this the 2 MB stays charged and
          * the whole exercise buys nothing. */
-        (void)os::SetMemoryHeapSize(0);
+        const auto rc = os::SetMemoryHeapSize(0);
+        if (R_FAILED(rc)) {
+            Trace("safe-stop: identity workspace release failed rc=%x", rc.GetValue());
+            ::svcExitProcess();
+        }
         Trace("genmem: released");
     }
 
@@ -1655,6 +1689,7 @@ namespace ztnx {
         const int64_t now = NowMs();
         if (now < s_nextMs) { return; }
         s_nextMs = now + 5000;
+        RequireSystemMemoryHeadroom(0, "running");
 
         if (!s_tried) {
             s_tried = true;
@@ -1670,6 +1705,9 @@ namespace ztnx {
         }
         if (s_rl == svc::InvalidHandle || s_limit == 0) { return; }
 
+        // Atmosphere can change the limit via a resource boost after boot.
+        (void)svc::GetResourceLimitLimitValue(std::addressof(s_limit), s_rl,
+                                             svc::LimitableResource_PhysicalMemoryMax);
         s64 cur = 0;
         if (R_FAILED(svc::GetResourceLimitCurrentValue(std::addressof(cur), s_rl,
                          svc::LimitableResource_PhysicalMemoryMax))) {
