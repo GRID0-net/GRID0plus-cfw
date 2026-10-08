@@ -28,8 +28,8 @@ Runs directly on the console as a background sysmodule and homebrew app. No PC o
 
 [image: the Tesla overlay open on the Switch showing the sys-GRID0 connection status]
 
-**GRID0+:**
----
+#### **GRID0+ Only (GRID0+ is free):**
+
 5. Reboot into Atmosphere, open the HomeBrew Menu (Album), open the GRID0+ Toolbox and select Change to GRID0+ mode.<br>
 6. After your switch restarts, head to Settings > Users > Add A User > Not With Me > Yes, Had an Account > Link Account > Sign Into Your GRID0+ account using your Discord username and password from the bot.<br>
 7. Verify connection status using the Tesla (or Ultrahand) overlay menu.
