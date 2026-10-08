@@ -90,9 +90,10 @@ boot, LAN-play and sleep/wake tests are required. The known-bad 1 MiB allocator
 and 128 KiB node stack have not been reinstated, and identity verification
 still uses the protocol-required 2 MiB workspace.
 
-Toolbox updates remain frozen for this module. Install a test module manually
-and only deliberately enable its boot flag; do not restore autostart merely
-to obtain an updated binary.
+Toolbox 0.8.4 offers an explicit sysmodule/overlay update choice. Updating does
+not enable a disabled module or replace its configuration and identity. Only
+deliberately enable its boot flag; do not restore autostart merely to obtain an
+updated binary. Reboot to load the installed replacement.
 
 MITM registration is now undone if its server thread cannot be created, so
 clients are not left waiting on a port with no worker. A linked-build audit

@@ -2,8 +2,8 @@
 //
 // On demand (when the user selects "Check for updates"), queries GitHub's
 // releases API, compares the tag's semver against GRID0PLUS_VERSION_*, and if
-// newer downloads the release's SD zip and extracts it over the SD card, so
-// the sysmodule, overlay and toolbox all update together.
+// installs only the components selected by the user, preserving configuration
+// and the sysmodule's enabled/disabled state.
 #ifndef GRID0PLUS_UPDATE_H
 #define GRID0PLUS_UPDATE_H
 
@@ -11,12 +11,20 @@
 
 typedef struct {
     bool available;
+    bool toolbox_available, sysmodule_available;
+    char tag[64];
     int maj, min, patch;
     long size;   // expected zip size, for a post-download integrity check
     // 0 when the check completed (available says whether there is an update);
     // otherwise a NET_ERR_* code or the HTTP status the server answered with.
     int error;
 } Grid0plusUpdate;
+
+typedef enum {
+    GRID0PLUS_UPDATE_TOOLBOX = 1,
+    GRID0PLUS_UPDATE_SYSMODULE = 2,
+    GRID0PLUS_UPDATE_BOTH = 3,
+} Grid0plusUpdateTarget;
 
 typedef enum {
     GRID0PLUS_UPDATE_OK = 0,
@@ -42,6 +50,6 @@ Grid0plusUpdate update_check(void);
 
 // Downloads and installs the update found by the last update_check() call
 // that reported one available. `onProgress` may be NULL.
-Grid0plusUpdateResult update_apply(long expectedSize, Grid0plusUpdateProgressFn onProgress);
+Grid0plusUpdateResult update_apply(long expectedSize, Grid0plusUpdateTarget target, Grid0plusUpdateProgressFn onProgress);
 
 #endif // GRID0PLUS_UPDATE_H

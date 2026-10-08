@@ -179,7 +179,11 @@ jobs:
         if: needs.plan.outputs.toolbox != 'true' || needs.plan.outputs.sysmodule != 'true'
         run: |
           mkdir -p previous
-          gh release download -R "${{ github.repository }}" -D previous \
+          # Latest is reserved for older Toolbox updaters. Reuse the newest
+          # published bundle, including sysmodule-only releases.
+          PREVIOUS_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=5" \
+            --jq '[.[] | select(.draft == false and .prerelease == false)][0].tag_name')
+          gh release download "${PREVIOUS_TAG}" -R "${{ github.repository }}" -D previous \
             -p 'GRID0-cfw-*.zip' -p 'grid0plus-toolbox.nro'
           ls -l previous
 

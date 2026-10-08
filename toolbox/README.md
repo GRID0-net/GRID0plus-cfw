@@ -143,13 +143,24 @@ releases it, and existing installs pick it up through the in-app updater.
 
 ## Updates & server status
 
-The in-app updater asks GitHub's public API for this repository's latest
-release (`api.github.com/repos/GRID0-net/GRID0plus-cfw/releases/latest`)
-and downloads its `grid0plus-toolbox.nro` asset, following GitHub's
-redirect to the asset host. Nothing is configured for it and no token is
-involved: the repository is public. The requests go out as HTTP/1.0 so
+The in-app updater reads GitHub's public release list, including sysmodule-only
+`-sys.N` releases, and offers **Toolbox only**, **sys-GRID0+ and overlay only**,
+or **Both**. It downloads the selected release's combined ZIP using its exact
+tag. Components already current are left alone when selecting Both.
+Settings, identities, hosts and the sysmodule boot flag are never extracted.
+Installing a previously absent sysmodule does not automatically enable it.
+Sysmodule updates take effect after a reboot; Toolbox updates after relaunch.
+The last installed sysmodule bundle is tracked in
+`/GRID0plus/sys-grid0-installed-release.txt`; an older manual installation has
+no marker and is offered an update once. This records what is installed on SD,
+not which binary is currently running.
+
+No token is needed: the repository is public. The requests use HTTP/1.0 so
 GitHub answers with a plain `Content-Length` body; `source/net.c` does not
-decode chunked transfer encoding.
+decode chunked transfer encoding. ZIP entries are staged and checked for size
+and CRC before replacement. The previous binary is retained beside its replacement as
+`.grid0-update.bak`; failed placement attempts restore it. The whole multi-file
+installation is not transactional if power or the SD fails during renames.
 
 Before 0.7.0 the repository was private and updates went through GRID0+'s
 own `/updates/latest` relay, which held a GitHub token; that relay is how a
@@ -176,14 +187,14 @@ This project is not affiliated with, endorsed by, or connected to Nintendo.
 "Nintendo" and "Nintendo Switch" are trademarks of Nintendo. Use it only on
 hardware you own, running Atmosphère custom firmware you've set up yourself.
 
-### Temporary sysmodule update freeze (0.8.3)
+### Upgrading older Toolbox versions
 
-The in-app updater extracts only `switch/grid0plus-toolbox.nro` from the
-combined release ZIP. It does not install or update sys-GRID0+, its overlay,
-its boot flag, or its network identity/configuration. This prevents an update
-from silently enabling a module while boot-time resource failures are being
-investigated. An already enabled module stays enabled; disable it separately
-if needed. Manually extracting the full SD-ready ZIP still installs its
-sysmodule, so use the standalone NRO during this freeze. Updating from an
-older Toolbox uses that older updater: manually replace the NRO once to
-reach 0.8.3 safely. The diagnostic memset probe is not part of this release.
+Version 0.8.3 temporarily restricted updates to the Toolbox. Version 0.8.4
+replaces that freeze with the explicit component selector. An older updater
+still follows its own behavior: manually replace only
+`/switch/grid0plus-toolbox.nro` to get this selector without unintentionally
+installing or enabling the sysmodule. Future checks use the choices above.
+
+After applying GRID0+, the hosts header includes the generating Toolbox
+version. Updating the NRO alone does not rewrite hosts: run Apply GRID0+ to
+regenerate them, then reboot to make Atmosphere load them.

@@ -194,18 +194,43 @@ static void runUpdateFlow(PadState *pad) {
         return;
     }
 
-    char body[128];
-    snprintf(body, sizeof(body), "Version %d.%d.%d is available. Download and install now?",
-             upd.maj, upd.min, upd.patch);
-    if (!confirmScreen(pad, "Update available", body)) return;
-
+    int choice = 0;
+    const char *choices[] = { "Toolbox only", "sys-GRID0+ and overlay only", "Both" };
+    while (appletMainLoop()) {
+        padUpdate(pad);
+        u64 k = padGetButtonsDown(pad);
+        if (k & HidNpadButton_B) return;
+        if (k & HidNpadButton_Up) choice = (choice + 2) % 3;
+        if (k & HidNpadButton_Down) choice = (choice + 1) % 3;
+        consoleClear(); drawHeader();
+        printf("Release %s available\n\n", upd.tag);
+        printf("Toolbox: %s\nsys-GRID0+: %s\n\n",
+               upd.toolbox_available ? "new version" : "already current",
+               upd.sysmodule_available ? "new or untracked installation" : "already current");
+        for (int i = 0; i < 3; i++) printf("%s %s\n", choice == i ? ">" : " ", choices[i]);
+        printf("\nSettings and sysmodule enable state are preserved.\n(A) Install selected components   (B) Cancel\n");
+        consoleUpdate(NULL);
+        if (k & HidNpadButton_A) {
+            if ((choice == 0 && !upd.toolbox_available) || (choice == 1 && !upd.sysmodule_available)) continue;
+            break;
+        }
+        svcSleepThread(16000000ULL);
+    }
+    if (!appletMainLoop()) return;
+    Grid0plusUpdateTarget target = choice == 0 ? GRID0PLUS_UPDATE_TOOLBOX :
+                                     choice == 1 ? GRID0PLUS_UPDATE_SYSMODULE : GRID0PLUS_UPDATE_BOTH;
+    target = (Grid0plusUpdateTarget)(target &
+        ((upd.toolbox_available ? GRID0PLUS_UPDATE_TOOLBOX : 0) |
+         (upd.sysmodule_available ? GRID0PLUS_UPDATE_SYSMODULE : 0)));
     s_updLastPct = -1;
-    Grid0plusUpdateResult res = update_apply(upd.size, updateProgressCb);
+    Grid0plusUpdateResult res = update_apply(upd.size, target, updateProgressCb);
 
     switch (res) {
         case GRID0PLUS_UPDATE_OK:
             messageScreen(pad, "Update installed",
-                          "Close this app and relaunch it to run the new version.");
+                          target == GRID0PLUS_UPDATE_TOOLBOX ?
+                          "Close and relaunch the Toolbox to use the new version." :
+                          "Reboot to load the updated sysmodule. Settings and boot flag are unchanged.");
             break;
         case GRID0PLUS_UPDATE_SIZE_FAIL:
             messageScreen(pad, "Update failed", "Downloaded file size did not match. Try again.");
