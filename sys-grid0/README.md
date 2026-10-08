@@ -133,3 +133,26 @@ using Atmosphère's homebrew override flag. Title takeover retains the game's
 program ID, so a title allowlist alone also intercepted Toolbox as Splatoon 3.
 The 2026-10-08 report identifies hbloader and Toolbox, with the bridge's boot
 log confirming that incorrect interception.
+
+## Switch Online / ZeroTier LAN without rebooting
+
+On the overlay's main page, **ZeroTier LAN (restart game)** selects the
+networking mode for the next supported game process. Off is the default,
+including existing configs without `lan_mode`: BSD and NIFM requests go directly
+to Horizon, so GRID0+ online play keeps normal networking. On applies the LAN
+bridges selected by the BSD/NIFM toggles. ZeroTier itself runs in either mode.
+
+Close the game completely before changing modes, then launch it again. Both
+services remember one decision per process: the toggle cannot safely rewrite
+already-open sockets or the game's cached IP. BSD/NIFM toggles now apply to the
+next game too. Module autostart and detailed diagnostics still require reboot.
+Installing this new module also requires one reboot; later mode switches do not.
+The query responders stay registered even in Online mode, but decline those
+clients rather than installing a forwarding shim. Homebrew is always excluded.
+
+Local policy tests cover mode changes, shared decisions across services, and
+reclaiming exited process entries. Actual online/LAN switching still needs a
+console test; the build alone does not confirm networking interoperability.
+On 2026-10-08 the operator tested the local live-mode build on Switch and
+reported that the switcher worked. Keep separate startup, online-play and
+LAN-match observations when checking further compatibility.

@@ -281,6 +281,7 @@ namespace ztnx {
     void SetMitmRegistration(unsigned bit, bool registered);
     [[noreturn]] void StopProcessSafely();
     bool ConfigFlag(const char *key, bool dflt);
+    bool LanBridgeEnabledForProcess(uint64_t pid, unsigned bridge);
     int  ConfigValue(const char *key, int dflt);
     uint32_t ConfigIpv4(const char *key);   /* 0 when absent or unparseable */
 

@@ -57,6 +57,8 @@ namespace ztnx::mitm {
         if (client.override_status.IsHbl()) return false;
         const LanTitle *title = FindLanTitle(client.program_id.value);
         if (title == nullptr) { return false; }
+        if (!LanBridgeEnabledForProcess(client.process_id.value, NifmMitmRegistration)) return false;
+
         NoteSync("nifm ask         %016llx pid %llu -> yes (%s)",
                  (unsigned long long)client.program_id.value,
                  (unsigned long long)client.process_id.value, title->name);

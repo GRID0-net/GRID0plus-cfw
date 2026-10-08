@@ -4,6 +4,8 @@
  * NOT YET COMPILED. See README.md.
  */
 #include "zt_port.hpp"
+#include "bridge_policy.hpp"
+#include "net/lifetime.hpp"
 #include "system_budget.hpp"
 #include "mitm/bsd_shim.hpp"
 #include "nat_mapper.hpp"
@@ -628,6 +630,8 @@ namespace ztnx {
             "[sys-GRID+]\n"
             "network =\n"
             "nwid =\n"
+            "# Online by default. LAN changes apply when the game restarts.\n"
+            "lan_mode = 0\n"
             "bsd_mitm = 1\n"
             "nifm_mitm = 1\n"
             "debug_logging = 0\n"
@@ -1019,6 +1023,24 @@ namespace ztnx {
             line = (*eol == '\n') ? (eol + 1) : eol;
         }
         return result;
+    }
+
+    bool LanBridgeEnabledForProcess(uint64_t pid, unsigned bridge)
+    {
+        static BridgePolicy policy;
+        static os::SdkMutex lock;
+        std::scoped_lock guard(lock);
+        const unsigned mask = policy.ForProcess(pid, [] {
+            if (!ConfigFlag("lan_mode", false)) return 0u;
+            return (ConfigFlag("bsd_mitm", true) ? BsdMitmRegistration : 0u) |
+                   (ConfigFlag("nifm_mitm", true) ? NifmMitmRegistration : 0u);
+        }, [](uint64_t old_pid) {
+            u64 live[128]{};
+            s32 count = 0;
+            const auto rc = svcGetProcessList(&count, live, 128);
+            return net::ProcessListConfirmsExit(old_pid, live, count, 128, R_SUCCEEDED(rc));
+        });
+        return (mask & bridge) != 0;
     }
 
     uint64_t WaitForConfiguredNetworkId()

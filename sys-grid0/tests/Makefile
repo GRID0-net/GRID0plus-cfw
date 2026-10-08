@@ -26,10 +26,14 @@ test_nat_support: test_nat_support.c ../compat/nat/support.c
 test_system_budget: test_system_budget.cpp ../source/system_budget.hpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
-run: test_vnet test_nat_support test_system_budget
+test_bridge_policy: test_bridge_policy.cpp ../source/bridge_policy.hpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+run: test_vnet test_nat_support test_system_budget test_bridge_policy
 	./test_vnet
 	./test_nat_support
 	./test_system_budget
+	./test_bridge_policy
 	python3 test_late_init.py
 	python3 test_node_init.py
 	python3 test_safe_exit.py
@@ -43,5 +47,5 @@ cross:
 	@echo "aarch64 build OK"
 
 clean:
-	rm -f test_vnet test_nat_support test_system_budget
+	rm -f test_vnet test_nat_support test_system_budget test_bridge_policy
 	rm -rf test_vnet.dSYM

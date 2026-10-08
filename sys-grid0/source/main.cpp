@@ -560,10 +560,8 @@ namespace ams {
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Warray-bounds"
         void StartNifmMitm() {
-            if (!ztnx::ConfigFlag("nifm_mitm", true)) {
-                ztnx::Trace("mitm: nifm:u DISABLED by config (nifm_mitm = 0)");
-                return;
-            }
+            // Keep the query responder registered so the next game can select
+            // LAN without rebooting; Online clients are declined by ShouldMitm.
             g_nifm_mitm_manager = ams::util::ConstructAt(g_nifm_mitm_manager_storage);
             const ams::Result r = g_nifm_mitm_manager->RegisterMitmServer<ztnx::mitm::NifmShim>(
                 0, ams::sm::ServiceName::Encode("nifm:u"));
@@ -587,10 +585,8 @@ namespace ams {
         #pragma GCC diagnostic pop
 
         void StartBsdMitm() {
-            if (!ztnx::ConfigFlag("bsd_mitm", true)) {
-                ztnx::Trace("mitm: bsd:u DISABLED by config (bsd_mitm = 0)");
-                return;
-            }
+            // Keep the query responder registered so the next game can select
+            // LAN without rebooting; Online clients are declined by ShouldMitm.
 
             g_mitm_manager = ams::util::ConstructAt(g_mitm_manager_storage);
 

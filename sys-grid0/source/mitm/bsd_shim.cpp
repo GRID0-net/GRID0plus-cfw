@@ -1347,6 +1347,8 @@ namespace ztnx::mitm {
             return false;
         }
 
+        if (!LanBridgeEnabledForProcess(client.process_id.value, BsdMitmRegistration)) return false;
+
         const int n = CountClientSession(client.process_id.value);
 
         /* Table full: refuse rather than guess a session index. */

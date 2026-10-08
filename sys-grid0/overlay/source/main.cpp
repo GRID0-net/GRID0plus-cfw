@@ -371,7 +371,7 @@ class AdvancedGui final : public tsl::Gui {
 public:
     tsl::elm::Element *createUI() override
     {
-        auto *frame = new tsl::elm::OverlayFrame("Advanced", "Toggles apply on reboot");
+        auto *frame = new tsl::elm::OverlayFrame("Advanced", "Mode: restart game; module/debug: reboot");
         auto *list = new tsl::elm::List();
 
         const bool module_enabled = FileExists(BootFlag) || !FileExists(DisabledBootFlag);
@@ -380,14 +380,14 @@ public:
         list->addItem(module);
 
         auto *bsd = new tsl::elm::ToggleListItem(
-            "BSD LAN bridge", ConfigSwitch("bsd_mitm", true));
+            "BSD LAN bridge (next game)", ConfigSwitch("bsd_mitm", true));
         bsd->setStateChangedListener([](bool state) {
             ult::setIniFileValue(ConfigPath, "sys-GRID+", "bsd_mitm", state ? "1" : "0");
         });
         list->addItem(bsd);
 
         auto *nifm = new tsl::elm::ToggleListItem(
-            "NIFM IP bridge", ConfigSwitch("nifm_mitm", true));
+            "NIFM IP bridge (next game)", ConfigSwitch("nifm_mitm", true));
         nifm->setStateChangedListener([](bool state) {
             ult::setIniFileValue(ConfigPath, "sys-GRID+", "nifm_mitm", state ? "1" : "0");
         });
@@ -421,6 +421,13 @@ public:
     {
         auto *frame = new tsl::elm::OverlayFrame("sys-GRID0+", APP_VERSION);
         auto *list = new tsl::elm::List();
+
+        auto *lan = new tsl::elm::ToggleListItem(
+            "ZeroTier LAN (restart game)", ConfigSwitch("lan_mode", false));
+        lan->setStateChangedListener([](bool state) {
+            ult::setIniFileValue(ConfigPath, "sys-GRID+", "lan_mode", state ? "1" : "0");
+        });
+        list->addItem(lan);
 
         list->addItem(new tsl::elm::CategoryHeader("Connection"));
         m_status = new tsl::elm::ListItem("Status", "Starting...");

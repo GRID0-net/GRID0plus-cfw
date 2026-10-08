@@ -38,3 +38,5 @@ build.log
 /exefs.nsp
 
 /tests/test_system_budget
+
+/tests/test_bridge_policy
