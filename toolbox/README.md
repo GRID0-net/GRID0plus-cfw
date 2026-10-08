@@ -175,3 +175,15 @@ The result is `grid0plus.nro`, copy it to `/switch/` on your SD card.
 This project is not affiliated with, endorsed by, or connected to Nintendo.
 "Nintendo" and "Nintendo Switch" are trademarks of Nintendo. Use it only on
 hardware you own, running Atmosphère custom firmware you've set up yourself.
+
+### Temporary sysmodule update freeze (0.8.3)
+
+The in-app updater extracts only `switch/grid0plus-toolbox.nro` from the
+combined release ZIP. It does not install or update sys-GRID0+, its overlay,
+its boot flag, or its network identity/configuration. This prevents an update
+from silently enabling a module while boot-time resource failures are being
+investigated. An already enabled module stays enabled; disable it separately
+if needed. Manually extracting the full SD-ready ZIP still installs its
+sysmodule, so use the standalone NRO during this freeze. Updating from an
+older Toolbox uses that older updater: manually replace the NRO once to
+reach 0.8.3 safely. The diagnostic memset probe is not part of this release.

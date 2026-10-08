@@ -155,6 +155,7 @@ static bool extractZip(const char *zipPath, const char *destRoot) {
 
     unz_global_info gi;
     bool ok = unzGetGlobalInfo(uf, &gi) == UNZ_OK;
+    bool installedToolbox = false;
     char buf[16384];
     long done = 0;
 
@@ -169,6 +170,16 @@ static bool extractZip(const char *zipPath, const char *destRoot) {
             ok = false;
             break;
         }
+        // Freeze sysmodule/overlay installation while the boot resource
+        // failures are investigated. The combined release ZIP carries an
+        // enabling boot2.flag, so extracting it would also undo a user's
+        // deliberate disable. Only the Toolbox executable may be updated.
+        if (strcmp(name, "switch/grid0plus-toolbox.nro") != 0) {
+            if (i + 1 < gi.number_entry && unzGoToNextFile(uf) != UNZ_OK) ok = false;
+            continue;
+        }
+        if (installedToolbox) { ok = false; break; }
+        installedToolbox = true;
         size_t nl = strlen(name);
         bool isDir = nl > 0 && (name[nl - 1] == '/' || name[nl - 1] == '\\');
 
@@ -214,7 +225,7 @@ static bool extractZip(const char *zipPath, const char *destRoot) {
     }
 
     unzClose(uf);
-    return ok;
+    return ok && installedToolbox;
 }
 
 Grid0plusUpdateResult update_apply(long expectedSize, Grid0plusUpdateProgressFn onProgress) {
