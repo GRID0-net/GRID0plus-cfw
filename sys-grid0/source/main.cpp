@@ -388,7 +388,7 @@ namespace ams {
                 const auto finalize_rc = g_pm_module->Finalize();
                 if (R_FAILED(finalize_rc)) {
                     ztnx::Trace("safe-stop: psc unregister failed rc=%x", finalize_rc.GetValue());
-                    ::svcExitProcess();
+                    ztnx::StopProcessSafely();
                 }
                 g_pm_module->~PmModule();
                 g_pm_module = nullptr;
@@ -568,6 +568,7 @@ namespace ams {
             const ams::Result r = g_nifm_mitm_manager->RegisterMitmServer<ztnx::mitm::NifmShim>(
                 0, ams::sm::ServiceName::Encode("nifm:u"));
             if (R_FAILED(r)) { ztnx::Trace("mitm: RegisterMitmServer(nifm:u) failed 0x%x", r.GetValue()); return; }
+            ztnx::SetMitmRegistration(ztnx::NifmMitmRegistration, true);
             if (R_FAILED(os::CreateThread(std::addressof(g_nifm_mitm_thread), NifmMitmThreadMain, nullptr,
                                           g_nifm_mitm_thread_stack, sizeof(g_nifm_mitm_thread_stack),
                                           os::DefaultThreadPriority))) {
@@ -575,8 +576,9 @@ namespace ams {
                 const auto cleanup = sm::mitm::UninstallMitm(sm::ServiceName::Encode("nifm:u"));
                 if (R_FAILED(cleanup)) {
                     ztnx::Trace("safe-stop: nifm MITM cleanup failed rc=%x", cleanup.GetValue());
-                    ::svcExitProcess();
+                    ztnx::StopProcessSafely();
                 }
+                ztnx::SetMitmRegistration(ztnx::NifmMitmRegistration, false);
                 return;
             }
             os::StartThread(std::addressof(g_nifm_mitm_thread));
@@ -602,12 +604,12 @@ namespace ams {
                 return;
             }
 
+            ztnx::SetMitmRegistration(ztnx::BsdMitmRegistration, true);
             if (R_FAILED(os::CreateThread(std::addressof(g_mitm_thread), MitmThreadMain, nullptr,
                                           g_mitm_thread_stack, sizeof(g_mitm_thread_stack),
                                           os::DefaultThreadPriority))) {
                 ztnx::Trace("mitm: could not create server thread; removing interception");
-                (void)sm::mitm::UninstallMitm(sm::ServiceName::Encode("bsd:u"));
-                ::svcExitProcess();
+                ztnx::StopProcessSafely();
             }
             os::StartThread(std::addressof(g_mitm_thread));
             ztnx::Trace("mitm: bsd:u registered, relaying");
@@ -771,7 +773,7 @@ namespace ams {
                                                   NodeThreadPriority);
         if (R_FAILED(thread_rc)) {
             ztnx::Trace("safe-stop: node thread unavailable rc=%x", thread_rc.GetValue());
-            ::svcExitProcess();
+            ztnx::StopProcessSafely();
         }
         os::StartThread(std::addressof(g_node_thread));
 
@@ -810,7 +812,7 @@ namespace ams {
             if (R_FAILED(sm::Initialize())) {
                 constexpr char reason[] = "sys-GRID0 safe-stop: sm initialization failed";
                 ::svcOutputDebugString(reason, sizeof(reason) - 1);
-                ::svcExitProcess();
+                ztnx::StopProcessSafely();
             }
             ztnx::Trace("init: sm");
 

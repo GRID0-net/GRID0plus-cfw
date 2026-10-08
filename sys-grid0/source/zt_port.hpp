@@ -276,6 +276,10 @@ namespace ztnx {
     // Exit the optional module if a proposed allocation leaves too little
     // shared-System headroom. Never return null to ZeroTier's hash routine.
     void RequireSystemMemoryHeadroom(size_t extra, const char *phase);
+    constexpr unsigned BsdMitmRegistration = 1;
+    constexpr unsigned NifmMitmRegistration = 2;
+    void SetMitmRegistration(unsigned bit, bool registered);
+    [[noreturn]] void StopProcessSafely();
     bool ConfigFlag(const char *key, bool dflt);
     int  ConfigValue(const char *key, int dflt);
     uint32_t ConfigIpv4(const char *key);   /* 0 when absent or unparseable */

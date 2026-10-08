@@ -116,3 +116,14 @@ created after registration, it unregisters and destroys its local object;
 failed unregistration stops the process rather than retaining a power-state
 participant with no thread to acknowledge requests. Console sleep/wake testing
 is still required before enabling this feature.
+
+A hardware test of the memory guard on 2026-10-08 exposed an unsafe process
+exit: `report_00000000c7ffcd2e.bin` identifies SM (`0100000000000004`) aborting
+with `SessionClosed` immediately after our runtime memory stop. Atmosphere's
+SM aborts on failure of MITM query command 65000. All deliberate exit paths now
+uninstall registered BSD/NIFM interceptions before closing query responders.
+If unregistration fails, the responders stay alive while cleanup is retried.
+This fixes the shutdown ordering; it does not make the memory floor a proof
+that ZeroTier can stay running alongside every other sysmodule. A hardware
+retest is still needed. Source: Atmosphere `stratosphere/sm/source/impl/`
+`sm_service_manager.cpp`, `GetMitmServiceHandleImpl` and `UninstallMitm`.

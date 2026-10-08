@@ -139,6 +139,38 @@ namespace ztnx {
         return s_anchorMs + (int64_t)((ticks - s_anchorTick) / 19200);
     }
 
+    namespace {
+        constinit std::atomic<unsigned> g_registeredMitms{0};
+    }
+
+    void SetMitmRegistration(unsigned bit, bool registered) {
+        if (registered) g_registeredMitms.fetch_or(bit, std::memory_order_release);
+        else g_registeredMitms.fetch_and(~bit, std::memory_order_release);
+    }
+
+    [[noreturn]] void StopProcessSafely() {
+        // SM aborts on a failed ShouldMitm query (command 65000). Keep query
+        // responders alive until SM has removed both registrations under its
+        // own mutex; exiting first produced report_00000000c7ffcd2e.bin.
+        while (g_registeredMitms.load(std::memory_order_acquire) != 0) {
+            for (unsigned bit : {NifmMitmRegistration, BsdMitmRegistration}) {
+                if (!(g_registeredMitms.load(std::memory_order_acquire) & bit)) continue;
+                const auto name = sm::ServiceName::Encode(bit == BsdMitmRegistration ? "bsd:u" : "nifm:u");
+                const auto rc = sm::mitm::UninstallMitm(name);
+                if (R_SUCCEEDED(rc)) {
+                    SetMitmRegistration(bit, false);
+                    Trace("safe-stop: %s interception removed", bit == BsdMitmRegistration ? "bsd:u" : "nifm:u");
+                } else {
+                    Trace("safe-stop: unregister rc=%x; retaining query responders", rc.GetValue());
+                }
+            }
+            if (g_registeredMitms.load(std::memory_order_acquire) != 0)
+                os::SleepThread(TimeSpan::FromSeconds(5));
+        }
+        ::svcExitProcess();
+        __builtin_unreachable();
+    }
+
     void RequireSystemMemoryHeadroom(size_t extra, const char *phase)
     {
         u64 raw = 0;
@@ -147,7 +179,7 @@ namespace ztnx {
             R_FAILED(svc::GetInfo(std::addressof(raw), svc::InfoType_ResourceLimit,
                                   svc::PseudoHandle::CurrentProcess, 0))) {
             Trace("safe-stop: %s resource limit unavailable", phase);
-            ::svcExitProcess();
+            StopProcessSafely();
         }
         const auto rl = static_cast<svc::Handle>(raw);
         s64 limit = 0, used = 0;
@@ -163,7 +195,7 @@ namespace ztnx {
                   (unsigned long long)extra, (long long)SystemMemoryReserve);
             // Kernel teardown releases the module, its mappings and sessions.
             // Idling here would retain its static arena while am needs RAM.
-            ::svcExitProcess();
+            StopProcessSafely();
         }
     }
 
@@ -208,7 +240,7 @@ namespace ztnx {
             const auto release_rc = os::SetMemoryHeapSize(0);
             if (R_FAILED(release_rc)) {
                 Trace("safe-stop: failed identity workspace cleanup rc=%x", release_rc.GetValue());
-                ::svcExitProcess();
+                StopProcessSafely();
             }
             if (g_genmemFails++ < 3) {
                 Trace("genmem: %u KB unavailable, retrying in 3s", (unsigned)(GenMemSize / 1024));
@@ -230,7 +262,7 @@ namespace ztnx {
         const auto rc = os::SetMemoryHeapSize(0);
         if (R_FAILED(rc)) {
             Trace("safe-stop: identity workspace release failed rc=%x", rc.GetValue());
-            ::svcExitProcess();
+            StopProcessSafely();
         }
         Trace("genmem: released");
     }
