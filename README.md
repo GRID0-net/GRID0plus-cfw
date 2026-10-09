@@ -16,6 +16,8 @@ Custom Firm-Ware (cfw) build for Switch 1, for Modded Switch Users.**
 
 ## Setup Guide
 
+The GRID0+ cfw package runs on your modded Switch as a background sysmodule and homebrew app. Follow the steps below to connect to the GRID0+ custom servers.
+
 **Requires firmware 22.5.0.**
 
 1. Register a GRID0+ account with the Discord bot (`/register`). Save the password, you can reset it with `/reset-password`.
@@ -25,6 +27,8 @@ Custom Firm-Ware (cfw) build for Switch 1, for Modded Switch Users.**
 5. Link the account: System Settings > Users > Add a User > Import from another console > No > Yes > Link Account, then sign in with your GRID0+ account in the browser window.
 
 The blue profile picture is normal, it's the default for every account.
+
+Then just open the game and play with your friends on GRID0+!
 
 ---
 
