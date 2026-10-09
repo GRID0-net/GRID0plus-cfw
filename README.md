@@ -11,7 +11,7 @@ Custom Firm-Ware (cfw) build for Switch 1, for Modded Switch Users.**
 <sub>**GRID0+:** Replaces NSO functionality for online matchmaking, Splatfests, and in-game progression.</sub><br>
 <sub>Works for cross-play with banned switch users. Runs on custom servers. More info at [GRID0+](https://github.com/GRID0-net/GRID0).</sub><br>
 <sub>**GRID0:** Replaces the old LAN-play relays with better stability, faster speeds, and an easier setup.</sub><br>
-<sub>Works for cross-play with unbanned and banned switch users. Runs on ZeroTier. More info at [GRID0](https://github.com/GRID0-net/GRID0-ofw).</sub>
+<sub>Works for cross-play with unbanned and banned switch users. Runs on ZeroTier. More info at [GRID0](https://github.com/GRID0-net/GRID0).</sub>
 
 
 ## Setup Guide
