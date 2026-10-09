@@ -139,6 +139,11 @@ static const char *const LEGACY_OWNED_DIRS[] = {
     // The hand-installed test build of s3smallmatch_bypass: same patch,
     // removed so a console does not carry it twice.
     "sdmc:/atmosphere/exefs_patches/s3_wait_fullmember_test",
+    // Hand-installed test builds of the Tricolor pair records (now in
+    // s3smallmatch_bypass) and of s3moveless_bypass.
+    "sdmc:/atmosphere/exefs_patches/s3tricolor_test",
+    "sdmc:/atmosphere/exefs_patches/s3tricolor_pair_test",
+    "sdmc:/atmosphere/exefs_patches/s3moveless_test",
     "sdmc:/atmosphere/nro_patches/disable_browser_ca_verification",
     "sdmc:/GRID0plus/certs",
 };

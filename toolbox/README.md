@@ -119,8 +119,23 @@ onto the SD card, at the same relative path, when GRID0+ mode is applied
   readiness checks remain intact. Four verified alignment spans hold the
   trampoline, without changing fresh/private lobby minimums. The new
   server-lock gate still needs a hardware test.
+  Version 0.8.5 lets Tricolor start with one player per team. Its first step
+  (`fest_match_tricolor_team_config`) gathers a pair of one fest team and
+  waits for exactly two players, in the lobby wait (`0x71038AAC84`) and again
+  in the delegation step that hands the pair to the oneshot queue
+  (`0x71038AF188`, `MatchDelegateDisconnect` otherwise). Both equality
+  branches become less-or-equal, so one or two players pass and three still
+  do not. Confirmed on hardware with one player per team (Switch, Ryujinx,
+  Citron) on 2026-10-09.
   Regenerate with `python3 tools/make_s3_smallmatch.py [main.flat]`; the optional
   dump verifies every original instruction. A game update needs a new patch.
+- **`s3moveless_bypass`**, one patch, for the same Splatoon 3 build. The game
+  ends a battle for a player whose sticks, buttons and speed stay unchanged
+  for a while (`PlayerMoveless`); it kicked emulator players who were moving,
+  and idle test devices in every test match. The idle counter at
+  `0x7103B09CB8` still runs, but the branch that raises the error at
+  `0x7103B09E64` becomes unconditional, so it is never raised. Regenerate with
+  `python3 tools/make_s3_moveless.py [main.flat]`.
 - **`bcat_signature_bypass`**, one patch, for the `bcat` sysmodule build
   `6D9772A7…` that firmware **22.5.0** ships. It replaces the boolean BCAT
   stores from its central RSA verification callback, that callback's own
