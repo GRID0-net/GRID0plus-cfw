@@ -22,7 +22,8 @@ bool apply_grid0plus(const char *ip);
 // with Atmosphère's own default telemetry blocking. Does not reboot.
 bool apply_default(void);
 
-// Reboots the console (bpcRebootSystem). Only returns on failure.
+// Reboots the console: into hekate on Erista when its payload is on the SD
+// card, otherwise a normal reboot. Only returns on failure.
 Result grid0plus_reboot(void);
 
 #endif // GRID0PLUS_APPLY_H

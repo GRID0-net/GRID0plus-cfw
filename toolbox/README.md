@@ -28,6 +28,10 @@ GRID0+ IP : 89.168.58.206
 - **Mode switch.** *GRID0+* mode redirects the usual Nintendo online
   hostnames to a GRID0+ server and reboots so Atmosphère's DNS-MITM picks
   it up; *Default* mode removes that redirection and reboots back.
+  On an Erista (V1, RCM) console the reboot goes back into hekate, loaded
+  from `bootloader/update.bin` (or `atmosphere/reboot_payload.bin`), so the
+  console comes back up in CFW instead of stock firmware. Mariko consoles,
+  or an SD card with neither payload, get a normal reboot.
 - **Full hosts backup.** Before GRID0+ mode ever writes to
   `/atmosphere/hosts` for the first time, every file already in that folder
   is copied to `sdmc:/GRID0plus/hosts_backup/`, not just the files this app

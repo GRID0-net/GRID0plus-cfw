@@ -5,6 +5,7 @@
 #include "hosts.h"
 
 #include <stdio.h>
+#include <string.h>
 
 Grid0plusMode apply_current_mode(void) {
     return hosts_is_grid0plus_active() ? GRID0PLUS_MODE_GRID0PLUS : GRID0PLUS_MODE_DEFAULT;
@@ -73,7 +74,74 @@ bool apply_default(void) {
     return iniOk && prodinfoOk;
 }
 
+// Atmosphère only sends a bpc reboot to its reboot payload for some callers
+// (the power menu, fatal, hbl), so a plain bpcRebootSystem from the Toolbox
+// lands in stock firmware -- where an RCM console stays until someone injects
+// a payload again. On Erista the Toolbox therefore hands hekate to Atmosphère
+// itself and restarts into it, as Atmosphère's reboot_to_payload does.
+// Mariko cannot boot a payload, so it keeps the plain reboot.
+#define IRAM_PAYLOAD_MAX_SIZE 0x24000
+
+static u8 g_reboot_payload[IRAM_PAYLOAD_MAX_SIZE] __attribute__((aligned(0x1000)));
+
+static bool is_erista(void) {
+    u64 hw = 0;
+    if (R_FAILED(splInitialize())) return false;
+    Result rc = splGetConfig(SplConfigItem_HardwareType, &hw);
+    splExit();
+    // 0 Icosa and 1 Copper are Erista; everything later is Mariko.
+    return R_SUCCEEDED(rc) && hw <= 1;
+}
+
+// hekate keeps a copy of itself in bootloader/update.bin; reboot_payload.bin
+// is Atmosphère's own reboot payload, usually hekate too.
+static bool load_reboot_payload(void) {
+    static const char *const paths[] = {
+        "sdmc:/bootloader/update.bin",
+        "sdmc:/atmosphere/reboot_payload.bin",
+    };
+    for (size_t i = 0; i < sizeof(paths) / sizeof(paths[0]); i++) {
+        FILE *f = fopen(paths[i], "rb");
+        if (!f) continue;
+        memset(g_reboot_payload, 0, sizeof(g_reboot_payload));
+        size_t n = fread(g_reboot_payload, 1, sizeof(g_reboot_payload), f);
+        fclose(f);
+        if (n > 0) {
+            grid0plus_trace(i == 0 ? "reboot: payload bootloader/update.bin"
+                                   : "reboot: payload atmosphere/reboot_payload.bin");
+            return true;
+        }
+    }
+    return false;
+}
+
+static Result reboot_to_payload(void) {
+    Handle h;
+    Result rc = svcConnectToNamedPort(&h, "bpc:ams");
+    if (R_FAILED(rc)) return rc;
+    Service ams;
+    serviceCreate(&ams, h);
+    rc = serviceDispatch(&ams, 65001, // SetRebootPayload
+        .buffer_attrs = { SfBufferAttr_In | SfBufferAttr_HipcMapAlias },
+        .buffers = { { g_reboot_payload, sizeof(g_reboot_payload) } },
+    );
+    serviceClose(&ams);
+    if (R_FAILED(rc)) return rc;
+
+    rc = spsmInitialize();
+    if (R_FAILED(rc)) return rc;
+    rc = spsmShutdown(true);
+    spsmExit();
+    return rc;
+}
+
 Result grid0plus_reboot(void) {
+    if (is_erista() && load_reboot_payload()) {
+        // Only returns on failure; a plain reboot is still better than none.
+        reboot_to_payload();
+        grid0plus_trace("reboot: payload reboot failed, rebooting normally");
+    }
+
     Result rc = bpcInitialize();
     if (R_FAILED(rc)) return rc;
     rc = bpcRebootSystem();
