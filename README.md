@@ -5,7 +5,6 @@
 [![License2](https://img.shields.io/badge/License-MPLv2-blue.svg)](LICENSE-MPL-2.0)
 [![Chat on Discord](https://img.shields.io/badge/Discord-5865f2?logo=discord&logoColor=white)](https://discordapp.com/invite/splatfest)
 
- CFW build for modded Switch.
 **Play Switch games online with friends over a virtual LAN or GRID0+ custom servers.<br>
 Custom Firm-Ware (cfw) build for Switch 1, for Modded Switch Users.**
 
