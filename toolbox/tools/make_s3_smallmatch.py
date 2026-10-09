@@ -52,6 +52,17 @@ REMATCH_BLOCKS = {
     D: [0x39412508, branch(D+4, C), 0xd503201f], # secondary ebf +73
     C: [branch(C, 0x389FB2C, register=8), branch(C+4, 0x389F798, condition=11), branch(C+8, 0x389F658)],
 }
+# Tricolor's first step (fest_match_tricolor_team_config, match kind 8) gathers
+# a pair of one fest team and waits for exactly two players, first in the
+# lobby wait and again in the delegation step that hands the pair on to the
+# oneshot queue (MatchDelegateDisconnect otherwise). A team with one player
+# never advances. Both equality branches become less-or-equal, so one or two
+# players pass and three still do not; other kinds compare against four the
+# same way. Confirmed on hardware with one player per team, 2026-10-09.
+RECORDS += [
+    (0x38AAC84, "e0040054", "ed040054"),  # lobby wait: count == required
+    (0x38AF188, "80010054", "8d010054"),  # delegation: count == required
+]
 # Keep every start route in this retained-lobby controller behind the server's
 # backfill lock, rather than increasing its 120-update player-stability timer.
 RECORDS += [(0x389F654, instruction(branch(0x389F654, 0x389F798, condition=11)), instruction(branch(0x389F654, A)))]
