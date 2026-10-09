@@ -16,25 +16,15 @@ Custom Firm-Ware (cfw) build for Switch 1, for Modded Switch Users.**
 
 ## Setup Guide
 
-Runs directly on the console as a background sysmodule and homebrew app. No PC or phone required while playing.
+**Requires firmware 22.5.0.**
 
-1. Download the latest release from the **[GRID0+ cfw](https://github.com/GRID0-net/GRID0plus-cfw/)** repository.
-2. Extract the archive to the root of your SD card.
+1. Register a GRID0+ account with the Discord bot (`/register`). Save the password, you can reset it with `/reset-password`.
+2. Download the SwitchNet Toolbox from https://89.168.58.206:8443/updates/latest/download and install it on your Switch.
+3. Open the Toolbox and press the first option to apply the hosts. It backs up your hosts folder automatically.
+4. If you used Prelude or Nextendo before, open Prelude and switch back to Nintendo first (even if it already says Nintendo mode), reboot, then switch to GRID0+ in the Toolbox.
+5. Link the account: System Settings > Users > Add a User > Import from another console > No > Yes > Link Account, then sign in with your GRID0+ account in the browser window.
 
-[image: the SD card root with the extracted sys-GRID0 folders in place]
-
-3. Reboot into Atmosphere, (temporary step) Currently the network id isnt included with the release, so in ultrahand, insert the following network id on the sys-zerotier page (name is also not yet updated) : 8bd5124fd68185ec
-4. Verify connection status using the Tesla (or Ultrahand) overlay menu.
-
-[image: the Tesla overlay open on the Switch showing the sys-GRID0 connection status]
-
-#### **GRID0+ Only (GRID0+ is free):**
-
-5. Reboot into Atmosphere, open the HomeBrew Menu (Album), open the GRID0+ Toolbox and select Change to GRID0+ mode.<br>
-6. After your switch restarts, head to Settings > Users > Add A User > Not With Me > Yes, Had an Account > Link Account > Sign Into Your GRID0+ account using your Discord username and password from the bot.<br>
-7. Verify connection status using the Tesla (or Ultrahand) overlay menu.
-
-[image: the Tesla overlay open on the Switch showing the sys-GRID0 connection status]
+The blue profile picture is normal, it's the default for every account.
 
 ---
 
