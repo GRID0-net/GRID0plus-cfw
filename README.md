@@ -5,7 +5,8 @@
 [![License2](https://img.shields.io/badge/License-MPLv2-blue.svg)](LICENSE-MPL-2.0)
 [![Chat on Discord](https://img.shields.io/badge/Discord-5865f2?logo=discord&logoColor=white)](https://discordapp.com/invite/splatfest)
 
-**Play Switch games online with friends over custom servers (GRID0+) OR a virtual LAN (GRID0).<br>
+ CFW build for modded Switch.
+**Play Switch games online with friends over a virtual LAN or GRID0+ custom servers.<br>
 Custom Firm-Ware (cfw) build for Switch 1, for Modded Switch Users.**
 
 <sub>**GRID0+:** Replaces NSO functionality for online matchmaking, Splatfests, and in-game progression.</sub><br>
