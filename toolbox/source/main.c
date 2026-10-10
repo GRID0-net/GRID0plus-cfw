@@ -163,7 +163,12 @@ static void updateProgressCb(Grid0plusUpdatePhase phase, long done, long total) 
     consoleUpdate(NULL);
 }
 
-static void runUpdateFlow(PadState *pad) {
+#define TOOLBOX_NRO_PATH "sdmc:/switch/grid0plus-toolbox.nro"
+
+// Returns true when the Toolbox itself was replaced and hbloader can start the
+// new copy: the caller then exits, and the player lands straight back in the
+// updated Toolbox instead of having to close and relaunch it by hand.
+static bool runUpdateFlow(PadState *pad) {
     consoleClear();
     drawHeader();
     printf("Checking for updates...\n");
@@ -184,14 +189,14 @@ static void runUpdateFlow(PadState *pad) {
             else snprintf(why, sizeof(why), "Unknown network error (%d).", upd.error);
         }
         messageScreen(pad, "Could not check for updates", why);
-        return;
+        return false;
     }
     if (!upd.available) {
         char body[128];
         snprintf(body, sizeof(body), "You have the latest version (%d.%d.%d).",
                  GRID0PLUS_VERSION_MAJOR, GRID0PLUS_VERSION_MINOR, GRID0PLUS_VERSION_PATCH);
         messageScreen(pad, "Up to date", body);
-        return;
+        return false;
     }
 
     int choice = 0;
@@ -199,7 +204,7 @@ static void runUpdateFlow(PadState *pad) {
     while (appletMainLoop()) {
         padUpdate(pad);
         u64 k = padGetButtonsDown(pad);
-        if (k & HidNpadButton_B) return;
+        if (k & HidNpadButton_B) return false;
         if (k & HidNpadButton_Up) choice = (choice + 2) % 3;
         if (k & HidNpadButton_Down) choice = (choice + 1) % 3;
         consoleClear(); drawHeader();
@@ -216,7 +221,7 @@ static void runUpdateFlow(PadState *pad) {
         }
         svcSleepThread(16000000ULL);
     }
-    if (!appletMainLoop()) return;
+    if (!appletMainLoop()) return false;
     Grid0plusUpdateTarget target = choice == 0 ? GRID0PLUS_UPDATE_TOOLBOX :
                                      choice == 1 ? GRID0PLUS_UPDATE_SYSMODULE : GRID0PLUS_UPDATE_BOTH;
     target = (Grid0plusUpdateTarget)(target &
@@ -227,8 +232,18 @@ static void runUpdateFlow(PadState *pad) {
 
     switch (res) {
         case GRID0PLUS_UPDATE_OK:
+            if ((target & GRID0PLUS_UPDATE_TOOLBOX) && envHasNextLoad()) {
+                messageScreen(pad, "Update installed",
+                              (target & GRID0PLUS_UPDATE_SYSMODULE) ?
+                              "The Toolbox restarts now. Reboot later to load the updated sysmodule." :
+                              "The Toolbox restarts now with the new version.");
+                if (R_SUCCEEDED(envSetNextLoad(TOOLBOX_NRO_PATH, TOOLBOX_NRO_PATH))) return true;
+                grid0plus_trace("update: could not queue the Toolbox relaunch");
+                messageScreen(pad, "Update installed", "Close and relaunch the Toolbox to use the new version.");
+                break;
+            }
             messageScreen(pad, "Update installed",
-                          target == GRID0PLUS_UPDATE_TOOLBOX ?
+                          (target & GRID0PLUS_UPDATE_TOOLBOX) ?
                           "Close and relaunch the Toolbox to use the new version." :
                           "Reboot to load the updated sysmodule. Settings and boot flag are unchanged.");
             break;
@@ -242,6 +257,7 @@ static void runUpdateFlow(PadState *pad) {
             messageScreen(pad, "Update failed", "Network error. Check your connection and try again.");
             break;
     }
+    return false;
 }
 
 // Blocking status listing. Its own small loop rather than messageScreen:
@@ -428,7 +444,7 @@ int main(int argc, char **argv) {
                     config_set_restore_on_default(!config_get_restore_on_default());
                     break;
                 case MENU_CHECK_UPDATE:
-                    runUpdateFlow(&pad);
+                    if (runUpdateFlow(&pad)) goto done;
                     break;
                 case MENU_SERVER_STATUS:
                     runServerStatusFlow(&pad);

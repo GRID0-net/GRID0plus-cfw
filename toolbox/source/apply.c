@@ -90,6 +90,8 @@ static bool is_erista(void) {
     Result rc = splGetConfig(SplConfigItem_HardwareType, &hw);
     splExit();
     // 0 Icosa and 1 Copper are Erista; everything later is Mariko.
+    grid0plus_trace(R_SUCCEEDED(rc) ? (hw <= 1 ? "reboot: Erista" : "reboot: Mariko, normal reboot")
+                                    : "reboot: hardware type unknown, normal reboot");
     return R_SUCCEEDED(rc) && hw <= 1;
 }
 
@@ -112,13 +114,17 @@ static bool load_reboot_payload(void) {
             return true;
         }
     }
+    grid0plus_trace("reboot: no payload on the SD card, normal reboot");
     return false;
 }
 
 static Result reboot_to_payload(void) {
     Handle h;
     Result rc = svcConnectToNamedPort(&h, "bpc:ams");
-    if (R_FAILED(rc)) return rc;
+    if (R_FAILED(rc)) {
+        grid0plus_trace("reboot: bpc:ams not available");
+        return rc;
+    }
     Service ams;
     serviceCreate(&ams, h);
     rc = serviceDispatch(&ams, 65001, // SetRebootPayload
@@ -126,10 +132,17 @@ static Result reboot_to_payload(void) {
         .buffers = { { g_reboot_payload, sizeof(g_reboot_payload) } },
     );
     serviceClose(&ams);
-    if (R_FAILED(rc)) return rc;
+    if (R_FAILED(rc)) {
+        grid0plus_trace("reboot: SetRebootPayload failed");
+        return rc;
+    }
 
+    grid0plus_trace("reboot: payload handed to Atmosphere, restarting");
     rc = spsmInitialize();
-    if (R_FAILED(rc)) return rc;
+    if (R_FAILED(rc)) {
+        grid0plus_trace("reboot: spsm not available");
+        return rc;
+    }
     rc = spsmShutdown(true);
     spsmExit();
     return rc;
