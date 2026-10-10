@@ -21,12 +21,9 @@ The GRID0+ cfw package runs on your modded Switch as a background sysmodule and 
 **Requires firmware 22.5.0.**
 
 1. Register a GRID0+ account with the Discord bot (`/register`). Save the password, you can reset it with `/reset-password`.
-2. Download the SwitchNet Toolbox from https://89.168.58.206:8443/updates/latest/download and install it on your Switch.
-3. Open the Toolbox and press the first option to apply the hosts. It backs up your hosts folder automatically.
-4. If you used Prelude or Nextendo before, open Prelude and switch back to Nintendo first (even if it already says Nintendo mode), reboot, then switch to GRID0+ in the Toolbox.
-5. Link the account: System Settings > Users > Add a User > Import from another console > No > Yes > Link Account, then sign in with your GRID0+ account in the browser window.
-
-The blue profile picture is normal, it's the default for every account.
+2. Download the SwitchNet Toolbox from the releases tab and install it on your Switch. (drag and drop the .nro inside the `switch` folder of your SD card)
+3. If you used Prelude or Nextendo before, open Prelude and switch back to Nintendo first (even if it already says Nintendo mode), reboot, then switch to GRID0+ in the Toolbox. It backs up your hosts folder automatically.
+4. Link the account: System Settings > Users > Add a User > Import from another console > No > Yes > Link Account, then sign in with your GRID0+ account in the browser window.
 
 Then just open the game and play with your friends on GRID0+!
 
