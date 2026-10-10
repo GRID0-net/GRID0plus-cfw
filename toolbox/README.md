@@ -131,6 +131,17 @@ onto the SD card, at the same relative path, when GRID0+ mode is applied
   branches become less-or-equal, so one or two players pass and three still
   do not. Confirmed on hardware with one player per team (Switch, Ryujinx,
   Citron) on 2026-10-09.
+  Version 0.8.7 makes the room wait for every player the session really has.
+  `WaitFullmember` (`0x71038A420C`) compares the players connected over Pia
+  with the full room size, and the always-match compare above let the host
+  start a second after the room formed. Across two networks the other players
+  connect through the TURN relay about ten seconds later, so the host started
+  alone (`SessionAlone`, then `SyncStartFrameFailed3`), most visibly in
+  Splatfest battles, whose second room forms right before the battle. The
+  branch after the compare now checks the connected count against the lobby
+  object's session player count (`*(*GOT 0x5F22A98)+0x490`, capped at the
+  room size) and keeps waiting until everyone is connected. Confirmed on
+  hardware across two networks (Switch and Ryujinx) on 2026-10-10.
   Regenerate with `python3 tools/make_s3_smallmatch.py [main.flat]`; the optional
   dump verifies every original instruction. A game update needs a new patch.
 - **`s3moveless_bypass`**, one patch, for the same Splatoon 3 build. The game
