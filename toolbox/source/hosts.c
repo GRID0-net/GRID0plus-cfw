@@ -106,6 +106,10 @@ char *hosts_build(const char *ip) {
     sb_appendf(&sb, "%s pubkey.lp1.dragons.nintendo.net\n", ip);
     sb_appendf(&sb, "%s beach.hac.lp1.eshop.nintendo.net\n", ip);
     sb_appendf(&sb, "%s service-status-lp1.cdn.nintendo.net\n", ip);
+    // Vulnerable-firmware list: GRID0+ answers 404 (safe) for every version.
+    // Nintendo's own copy lists 22.5.0 and puts "A system update is required"
+    // in front of account linking, the eShop and NSO.
+    sb_appendf(&sb, "%s bvc-hac-lp1.cdn.nintendo.net\n", ip);
     sb_appendf(&sb, "%s gamesync.npln.nintendo.net\n", ip);
 
     // Used to be null-routed. NextendoNetwork/Prelude's own commit history
