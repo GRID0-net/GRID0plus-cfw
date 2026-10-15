@@ -63,50 +63,17 @@ RECORDS += [
     (0x38AAC84, "e0040054", "ed040054"),  # lobby wait: count == required
     (0x38AF188, "80010054", "8d010054"),  # delegation: count == required
 ]
-# WaitFullmember (0x38A420C) compares the stations connected over Pia (w0)
-# with the full room size (w24, 8 or 4) and starts once they are equal for 60
-# updates. An undersized match never reaches the full size, so that compare is
-# patched to always match above -- which alone also started the battle before
-# the other players had connected. On one network they connect in under a
-# second; across networks they connect through the TURN relay, about ten
-# seconds later, and the host started alone (SessionAlone, then
-# SyncStartFrameFailed3).
-#
-# The b.ne after it now goes through a check of the players the session
-# was expected to have: the lobby object's +0x490 was 2 in a two-player
-# Ryujinx observation on 2026-10-10, so it was used as the threshold, capped
-# at full size. Native Switch and Ryujinx probes on 2026-10-15 instead found
-# this field stays zero during a successful three-player startup. The zero
-# bypass below is therefore active in that flow; this is not a reliable
-# wait-for-all gate. Making zero wait also blocked a same-Wi-Fi control and
-# was reverted. The real roster consumed by FUN_71015173d0 is property
-# 0xc056fc0f; its membership before connections finish still needs probing.
-# Fewer connected than a nonzero threshold keeps waiting; otherwise startup
-# continues to the stability counter. No object or count: continue, as before.
-# x8 is dead on both paths, which reload it.
-W1, W2, W3, W4, W5 = 0x38A3BA4, 0x388C9F4, 0x3889104, 0x3885FB4, 0x38857B4
+# WaitFullmember must compare connected Pia stations with the completed All
+# peer-group roster, not the full room size or lobby+0x490. The latter stayed
+# zero on hardware and let the Switch start alone across networks. This gate
+# acquires native API/group ownership under the session manager's mutex and
+# retains the game's original stability counter. Validated with a three-player
+# Switch-hosted hotspot battle on 2026-10-15; all three referee profiles arrived.
+# The companion generator contains readable ARM64 and reproduces these records.
+import json
 WAIT_HOOK, WAIT_MORE, WAIT_ENOUGH = 0x38A4210, 0x38A4254, 0x38A4214
-
-
-def adrp(at, target, rd):
-    pages = (target >> 12) - (at >> 12)
-    return 0x90000000 | ((pages & 3) << 29) | (((pages >> 2) & 0x7ffff) << 5) | rd
-
-
-def cbz(at, target, rt, wide):
-    displacement = ((target - at) // 4) & 0x7ffff
-    return (0xB4000000 if wide else 0x34000000) | (displacement << 5) | rt
-
-
-WAIT_BLOCKS = {
-    W1: [adrp(W1, 0x5F22A98, 8), 0xF9454D08, branch(W1+8, W2)],              # x8 = GOT entry
-    W2: [0xF9400108, cbz(W2+4, WAIT_ENOUGH, 8, True), branch(W2+8, W3)],       # x8 = lobby object
-    W3: [0xB9449108, cbz(W3+4, WAIT_ENOUGH, 8, False), branch(W3+8, W4)],      # w8 = session players
-    W4: [0x6B18011F, 0x1A98B108, branch(W4+8, W5)],                            # w8 = min(w8, w24)
-    W5: [0x6B08001F, branch(W5+4, WAIT_MORE, condition=11), branch(W5+8, WAIT_ENOUGH)],  # lt: wait
-}
-WAIT_RECORDS = [(WAIT_HOOK, instruction(branch(WAIT_HOOK, WAIT_MORE, condition=1)), instruction(branch(WAIT_HOOK, W1)))]
-WAIT_RECORDS += [(rva, "00" * 12, "".join(instruction(w) for w in words)) for rva, words in WAIT_BLOCKS.items()]
+WAIT_RECORDS = [tuple(row) for row in json.loads(
+    Path(__file__).with_name("s3_peer_group_wait_records.json").read_text())]
 RECORDS += WAIT_RECORDS
 # Keep every start route in this retained-lobby controller behind the server's
 # backfill lock, rather than increasing its 120-update player-stability timer.

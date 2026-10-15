@@ -282,3 +282,22 @@ anyone using this is already running an emuMMC specifically because of
 that isolation. The correctness bar that actually matters is the generated
 hosts file being right, not whether Nintendo could theoretically detect a
 patched executable on hardware that never reaches Nintendo's servers.
+
+## Undersized-match readiness (11.3.0, 2026-10-15)
+
+The small-match IPS now waits for the completed `All` peer-group roster to
+match the connected Pia station count. The previous lobby `+0x490` threshold
+stayed zero in native three-player runs and allowed the Switch host to start
+alone while relayed peers were still connecting. Missing or unready data now
+keeps waiting; the original 61-update stability check remains.
+
+The gate holds native API/group ownership and releases the session-manager
+mutex before dropping those references. `tools/make_s3_peer_group_gate.py`
+reproduces the checked-in readiness records; `tools/test_s3_peer_group_gate.py`
+executes 284 ARM64 cases with Unicorn, including last-owner destruction.
+`make_s3_smallmatch.py <operator-main.flat>` verifies original patch spans.
+
+One three-player Switch-hosted battle over a hotspot succeeded with all three
+referee profiles reaching startup. This is a tested configuration, not a claim
+that all modes and repeated disconnect cases have been verified. Ryujinx and
+Citron embed the same IPS bytes. Restart the game after applying an update.
