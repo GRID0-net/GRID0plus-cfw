@@ -142,6 +142,12 @@ onto the SD card, at the same relative path, when GRID0+ mode is applied
   object's session player count (`*(*GOT 0x5F22A98)+0x490`, capped at the
   room size) and keeps waiting until everyone is connected. Confirmed on
   hardware across two networks (Switch and Ryujinx) on 2026-10-10.
+  **Three-player limitation, measured 2026-10-15:** that lobby count stays
+  zero on both Switch and Ryujinx during a successful three-player start, so
+  the patch takes its missing-count bypass. It does not reliably wait for all
+  three peers. A stricter zero-count gate blocked the same-Wi-Fi control and
+  was reverted. A replacement needs the actual session roster and another
+  hardware measurement; increasing a delay is not an established fix.
   Regenerate with `python3 tools/make_s3_smallmatch.py [main.flat]`; the optional
   dump verifies every original instruction. A game update needs a new patch.
 - **`s3moveless_bypass`**, one patch, for the same Splatoon 3 build. The game

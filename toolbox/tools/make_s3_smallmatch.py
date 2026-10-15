@@ -73,9 +73,15 @@ RECORDS += [
 # SyncStartFrameFailed3).
 #
 # The b.ne after it now goes through a check of the players the session
-# actually has: the lobby object at *(*GOT 0x5f22a98) holds them at +0x490 (2
-# in a two-player match, read on Ryujinx 2026-10-10), capped at the full size.
-# Fewer connected than that keeps waiting (the original b.ne target); enough
+# was expected to have: the lobby object's +0x490 was 2 in a two-player
+# Ryujinx observation on 2026-10-10, so it was used as the threshold, capped
+# at full size. Native Switch and Ryujinx probes on 2026-10-15 instead found
+# this field stays zero during a successful three-player startup. The zero
+# bypass below is therefore active in that flow; this is not a reliable
+# wait-for-all gate. Making zero wait also blocked a same-Wi-Fi control and
+# was reverted. The real roster consumed by FUN_71015173d0 is property
+# 0xc056fc0f; its membership before connections finish still needs probing.
+# Fewer connected than a nonzero threshold keeps waiting; otherwise startup
 # continues to the stability counter. No object or count: continue, as before.
 # x8 is dead on both paths, which reload it.
 W1, W2, W3, W4, W5 = 0x38A3BA4, 0x388C9F4, 0x3889104, 0x3885FB4, 0x38857B4
