@@ -29,6 +29,16 @@ static long s_downloadSize = 0;
 static char s_releaseTag[64] = {0};
 static int s_availableTargets = 0;
 
+// The release list from the last update_check(), kept for patches.c so a
+// launch costs one unauthenticated GitHub API call, not two.
+static char *s_releasesJson = NULL;
+static int s_releasesError = 0;
+
+const char *update_release_list(int *error) {
+    *error = s_releasesError;
+    return s_releasesJson;
+}
+
 static Grid0plusUpdateProgressFn s_progressCb = NULL;
 static long s_progressTotal = 0;
 
@@ -135,6 +145,9 @@ Grid0plusUpdate update_check(void) {
     s_downloadSize = 0;
     s_availableTargets = 0;
 
+    free(s_releasesJson);
+    s_releasesJson = NULL;
+    s_releasesError = NET_ERR_NOT_READY;
     if (!net_ready()) { u.error = NET_ERR_NOT_READY; return u; }
 
     size_t len = 0;
@@ -146,6 +159,7 @@ Grid0plusUpdate update_check(void) {
     }
     if (!body || status != 200) {
         u.error = status != 0 ? status : NET_ERR_UNKNOWN;
+        s_releasesError = u.error;
         free(body);
         return u;
     }
@@ -188,7 +202,8 @@ Grid0plusUpdate update_check(void) {
                              (u.sysmodule_available ? GRID0PLUS_UPDATE_SYSMODULE : 0);
         s_downloadSize = sz;
     }
-    free(json);
+    s_releasesJson = json;
+    s_releasesError = 0;
     return u;
 }
 

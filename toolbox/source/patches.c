@@ -3,6 +3,7 @@
 #include "config.h"
 #include "json.h"
 #include "net.h"
+#include "update.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -27,8 +28,6 @@
 #define PATCHES_ZIP_TMP    GRID0PLUS_DIR "/patches.zip.tmp"
 #define PATCHES_JSON_TMP   GRID0PLUS_DIR "/patches-manifest.tmp"
 
-#define GITHUB_API_HOST  "api.github.com"
-#define GITHUB_RELEASES  "/repos/GRID0-net/GRID0plus-cfw/releases?per_page=30"
 #define GITHUB_HOST      "github.com"
 #define GITHUB_DOWNLOAD  "/GRID0-net/GRID0plus-cfw/releases/download/"
 // The mirror serves the same two files from GRID0+'s Toolbox API port.
@@ -226,6 +225,14 @@ static void compare(Grid0plusPatchStatus *st) {
             else st->system_changes++;
         }
     }
+    // A retired patch still on the card is a system change: removing it is
+    // what the dialog is for, and it loads at boot like any system patch.
+    for (size_t i = 0; i < sizeof(RETIRED_DIRS) / sizeof(RETIRED_DIRS[0]); i++) {
+        char dir[FS_MAX_PATH];
+        struct stat sb;
+        snprintf(dir, sizeof(dir), "%s/%s", PATCHES_SD_ROOT, RETIRED_DIRS[i]);
+        if (stat(dir, &sb) == 0) st->system_changes++;
+    }
     for (int i = 0; i < s_installedCount; i++) {
         bool listed = false;
         for (int j = 0; j < s_patchCount && !listed; j++) listed = !strcmp(s_installed[i].dest, s_patches[j].dest);
@@ -254,20 +261,17 @@ static unsigned char *download(const char *host, int port, const char *path, con
     return data;
 }
 
-// The newest published patches release. Toolbox releases sit in the same list.
+// The newest published patches release, from the release list update_check()
+// already read: Toolbox releases sit in the same list. Without that list
+// (GitHub unreachable a moment ago) GitHub is not tried again, so a network
+// that drops packets costs one timeout before the mirror, not two.
 static bool findGithubTag(int *status) {
-    size_t len = 0;
-    unsigned char *body = net_https_get(GITHUB_API_HOST, 443, GITHUB_RELEASES, &len, status);
-    if (!body || *status != 200) { free(body); return false; }
-    char *json = malloc(len + 1);
-    if (!json) { free(body); *status = NET_ERR_OOM; return false; }
-    memcpy(json, body, len); json[len] = '\0';
-    free(body);
-    bool found = false;
+    const char *json = update_release_list(status);
+    if (!json) { if (*status == 0) *status = NET_ERR_UNKNOWN; return false; }
     const char *r = jsonSpace(json);
     if (*r == '[') {
         r++;
-        while (!found && *(r = jsonSpace(r)) && *r != ']') {
+        while (*(r = jsonSpace(r)) && *r != ']') {
             const char *end = jsonEnd(r, 0);
             if (!end) break;
             const char *draft = jsonField(r, "draft");
@@ -275,15 +279,14 @@ static bool findGithubTag(int *status) {
             if (draft && !strncmp(draft, "false", 5) &&
                 jsonString(jsonField(r, "tag_name"), tag, sizeof(tag)) && !strncmp(tag, "patches-", 8)) {
                 snprintf(s_tag, sizeof(s_tag), "%s", tag);
-                found = true;
+                return true;
             }
             r = jsonSpace(end);
             if (*r == ',') r++;
         }
     }
-    free(json);
-    if (!found) *status = NET_ERR_PROTO;
-    return found;
+    *status = NET_ERR_PROTO;
+    return false;
 }
 
 static unsigned char *fetchFile(bool mirror, const char *name, const char *tmp, long max, long *len,

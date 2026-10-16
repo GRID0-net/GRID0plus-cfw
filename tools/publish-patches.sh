@@ -14,25 +14,35 @@ REPO=GRID0-net/GRID0plus-cfw
 
 python3 -I tools/patches_manifest.py --check
 
-if [ -n "$(git status --porcelain -- patches tools/patches_manifest.py)" ]; then
+# --stage DIR writes the release files into DIR and stops: the Toolbox's
+# test runs its C code against exactly what would be published.
+STAGE_ONLY=""
+if [ "${1:-}" = "--stage" ]; then STAGE_ONLY="${2:?--stage needs a directory}"; fi
+
+if [ -z "$STAGE_ONLY" ] && [ -n "$(git status --porcelain -- patches tools/patches_manifest.py)" ]; then
     echo "patches/ has uncommitted changes; commit them first" >&2
     exit 1
 fi
-git fetch -q origin main
-if ! git merge-base --is-ancestor HEAD origin/main; then
+if [ -z "$STAGE_ONLY" ]; then git fetch -q origin main; fi
+if [ -z "$STAGE_ONLY" ] && ! git merge-base --is-ancestor HEAD origin/main; then
     echo "HEAD is not on origin/main; push it first" >&2
     exit 1
 fi
 
 SERIAL=$(python3 -I -c 'import json; print(json.load(open("patches/manifest.json"))["serial"])')
 TAG="patches-${SERIAL}"
-if gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
+if [ -z "$STAGE_ONLY" ] && gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
     echo "$TAG already exists; change patches/ and regenerate the manifest to publish a new serial" >&2
     exit 1
 fi
 
-STAGE=$(mktemp -d)
-trap 'rm -rf "$STAGE"' EXIT
+if [ -n "$STAGE_ONLY" ]; then
+    STAGE="$STAGE_ONLY"
+    mkdir -p "$STAGE"
+else
+    STAGE=$(mktemp -d)
+    trap 'rm -rf "$STAGE"' EXIT
+fi
 cp patches/manifest.json "$STAGE/"
 # One asset per distinct file, named by its hash, checked again on the way out.
 python3 -I - "$STAGE" <<'EOF'
@@ -50,6 +60,11 @@ with zipfile.ZipFile(stage / "patches.zip", "w", zipfile.ZIP_DEFLATED) as z:
     for f in sorted(stage.glob("*.ips")):
         z.write(f, f.name)
 EOF
+
+if [ -n "$STAGE_ONLY" ]; then
+    echo "Staged $TAG in $STAGE"
+    exit 0
+fi
 
 echo "Publishing $TAG from $(git rev-parse --short HEAD) with $(ls "$STAGE" | wc -l) files"
 gh release create "$TAG" -R "$REPO" --target "$(git rev-parse HEAD)" --latest=false \

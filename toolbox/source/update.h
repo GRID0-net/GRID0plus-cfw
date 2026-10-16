@@ -45,6 +45,10 @@ typedef void (*Grid0plusUpdateProgressFn)(Grid0plusUpdatePhase phase, long done,
 // at startup, before any update check. Safe to call with NULL/empty.
 void update_set_self_path(const char *argv0);
 
+// The raw release list the last update_check() read, or NULL with *error
+// set to why it could not be read.
+const char *update_release_list(int *error);
+
 // Queries GitHub for the latest release. Managed sockets/SSL internally.
 Grid0plusUpdate update_check(void);
 

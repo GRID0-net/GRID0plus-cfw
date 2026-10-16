@@ -455,6 +455,7 @@ int main(int argc, char **argv) {
                         consoleClear(); drawHeader();
                         printf("Downloading patches...\n");
                         consoleUpdate(NULL);
+                        (void)update_check();   // patches_check reads its release list
                         Grid0plusPatchStatus ps = patches_check();
                         if (ps.error) {
                             char why[160];

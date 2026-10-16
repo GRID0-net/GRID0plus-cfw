@@ -11,6 +11,7 @@ import json
 import os
 import subprocess
 import tempfile
+import shutil
 import zipfile
 
 toolbox = Path(__file__).resolve().parents[1]
@@ -42,6 +43,7 @@ HARNESS = r'''
 #include "config.h"
 #include "certs.h"
 #include "patches.h"
+#include "update.h"
 
 char g_server_ip[GRID0PLUS_SERVER_IP_MAX] = "10.0.0.1";
 void grid0plus_trace(const char *s) { fprintf(stderr, "trace: %s\n", s); }
@@ -53,6 +55,15 @@ void grid0plus_remove_dir_and_contents(const char *dir) {
     closedir(d); rmdir(dir);
 }
 bool net_ready(void) { return true; }
+
+// update_check()'s release list, as the fake GitHub API would answer it.
+const char *update_release_list(int *error) {
+    static char buf[1 << 16]; char p[1024];
+    snprintf(p, sizeof p, "%s/api.github.com/repos/GRID0-net/GRID0plus-cfw/releases", getenv("FAKE"));
+    FILE *f = fopen(p, "rb");
+    if (!f) { *error = getenv("DOWN") ? NET_ERR_CONNECT : 404; return NULL; }
+    buf[fread(buf, 1, sizeof buf - 1, f)] = 0; fclose(f); *error = 0; return buf;
+}
 
 // Serves FAKE/<host>/<path>; a missing file is a 404.
 static char *fakePath(const char *host, const char *path) {
@@ -171,13 +182,19 @@ def main():
         assert not (sd / game_twin[1]).exists() and (sd / game[1]).read_bytes() == game2[2]
 
         # GitHub down: the mirror answers.
-        import shutil
         shutil.rmtree(fake)
         publish(fake, [game2, system], 3, where=('mirror',))
         assert run('check', DOWN='api.github.com') == (0, '0 3 0 0 GRID0+ server'), run('check', DOWN='api.github.com')
         shutil.rmtree(fake)
         fake.mkdir()
         assert run('check', DOWN='api.github.com')[1].startswith('404 0 0 0'), 'no source: an error, no changes'
+
+        # A retired patch on an otherwise current card is still a change.
+        (sd / 'exefs_patches/account_delete_user_fix').mkdir(parents=True)
+        (sd / 'exefs_patches/account_delete_user_fix/C.ips').write_bytes(b'x')
+        publish(fake, [game2, system], 3)
+        assert run('check') == (0, '0 3 0 1 GitHub'), run('check')
+        shutil.rmtree(sd / 'exefs_patches/account_delete_user_fix')
 
         # Retired directories go on apply; Switch to Default removes ours only.
         (sd / 'exefs_patches/account_delete_user_fix').mkdir(parents=True)
@@ -198,7 +215,35 @@ def main():
         (sd / system[1]).write_bytes(system[2])
         assert run('check') == (0, '0 3 0 0 GitHub')
         assert run('remove')[0] == 0 and not (sd / game[1]).exists()
+        real_release(exe)
     print('patches: all checks passed')
+
+
+def real_release(exe):
+    """The real manifest and deflated patches.zip, as publish-patches.sh stages them."""
+    repo = toolbox.parent
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        stage = tmp / 'fake/github.com/GRID0-net/GRID0plus-cfw/releases/download/patches-real'
+        subprocess.run(['bash', str(repo / 'tools/publish-patches.sh'), '--stage', str(stage)],
+                       check=True, capture_output=True)
+        api = tmp / 'fake/api.github.com/repos/GRID0-net/GRID0plus-cfw/releases'
+        api.parent.mkdir(parents=True)
+        api.write_text(json.dumps([{'tag_name': 'patches-real', 'draft': False}]))
+        card = tmp / 'card'
+        (card / 'sdmc:').mkdir(parents=True)
+        manifest = json.loads((stage / 'manifest.json').read_text())
+        game = sum(1 for p in manifest['patches'] if p['kind'] == 'game')
+        system = sum(1 for p in manifest['patches'] if p['kind'] == 'system')
+        env = dict(os.environ, FAKE=str(tmp / 'fake'))
+        out = lambda *a: subprocess.run([str(exe), *a], cwd=card, env=env, capture_output=True, text=True)
+        first = out('check').stdout.split()
+        assert first[2:4] == [str(game), str(system)], (first, game, system)
+        assert out('apply').returncode == 0
+        assert out('check').stdout.split()[2:4] == ['0', '0']
+        for p in manifest['patches']:
+            on_card = card / 'sdmc:/atmosphere' / p['dest']
+            assert hashlib.sha256(on_card.read_bytes()).hexdigest() == p['sha256'], p['dest']
 
 
 main()
