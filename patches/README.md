@@ -29,6 +29,12 @@ hex digits), since which one is matched depends on the Atmosphère version.
 3. Commit and push to `main`.
 4. `tools/publish-patches.sh` creates the `patches-<serial>` release.
 
+The release carries `manifest.json`, every file as `<sha256>.ips`, and
+`patches.zip` holding the same files, which the Toolbox downloads in one
+request. The GRID0+ server mirrors `manifest.json` and `patches.zip` under
+`/grid0plus/patches/` on the Toolbox API port, for when GitHub cannot be
+reached.
+
 Nothing reaches a console or an emulator before step 4. Deleting a patch here
 removes it from devices on their next check, because clients remove files
 they installed that the manifest no longer lists.

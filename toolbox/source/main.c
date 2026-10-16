@@ -14,8 +14,9 @@
 //   Exit
 //
 // Switching modes writes Atmosphère's DNS-MITM hosts files and reboots (the
-// hosts files are only read at boot). Update checks are on demand, this app
-// never phones home unless the user presses the button for it.
+// hosts files are only read at boot). Every launch checks GitHub (and, for
+// patches, the GRID0+ server as a mirror) for a newer Toolbox, newer IPS
+// patches and a newer sysmodule before the menu opens; see runUpdates.
 #include <stdio.h>
 #include <string.h>
 #include <switch.h>
@@ -26,6 +27,7 @@
 #include "config.h"
 #include "hosts.h"
 #include "net.h"
+#include "patches.h"
 #include "status.h"
 #include "update.h"
 #include "version.h"
@@ -165,97 +167,157 @@ static void updateProgressCb(Grid0plusUpdatePhase phase, long done, long total) 
 
 #define TOOLBOX_NRO_PATH "sdmc:/switch/grid0plus-toolbox.nro"
 
-// Returns true when the Toolbox itself was replaced and hbloader can start the
-// new copy: the caller then exits, and the player lands straight back in the
-// updated Toolbox instead of having to close and relaunch it by hand.
-static bool runUpdateFlow(PadState *pad) {
+static void patchProgressCb(long done, long total) {
+    updateProgressCb(GRID0PLUS_UPDATE_PHASE_DOWNLOAD, done, total);
+}
+
+static void describeNetError(int error, const char *what, char *out, size_t cap) {
+    switch (error) {
+    case NET_ERR_CONNECT:   snprintf(out, cap, "%s: could not connect.", what); break;
+    case NET_ERR_TLS:       snprintf(out, cap, "%s: could not open a secure connection.", what); break;
+    case NET_ERR_PROTO:     snprintf(out, cap, "%s: the answer could not be read.", what); break;
+    case NET_ERR_NOT_READY: snprintf(out, cap, "%s: network services did not start.", what); break;
+    case NET_ERR_OOM:       snprintf(out, cap, "%s: out of memory.", what); break;
+    default:
+        if (error > 0) snprintf(out, cap, "%s: HTTP %d.", what, error);
+        else snprintf(out, cap, "%s: network error (%d).", what, error);
+    }
+}
+
+// Installs the patches a successful patches_check() found, reporting failure.
+static bool installPatches(PadState *pad, const Grid0plusPatchStatus *ps) {
+    if (ps->game_changes + ps->system_changes == 0) return true;
+    s_updLastPct = -1;
+    if (patches_apply(patchProgressCb)) return true;
+    messageScreen(pad, "Patch update failed",
+                  "The patches could not be downloaded or written. Nothing was half-installed; "
+                  "the Toolbox will try again next time it starts.");
+    return false;
+}
+
+// One pass over everything that can be out of date: the Toolbox, the
+// patches, and the sys-GRID0+ sysmodule. The Toolbox and the patches are
+// required (an old patch set only fails later, inside a game, with an error
+// that says nothing about why), so their only alternative to Update is Exit.
+// The sysmodule is optional. A failed check never blocks: the menu opens and
+// the next launch tries again.
+//
+// Returns true when the Toolbox should exit: the player chose Exit, or the
+// Toolbox replaced itself and queued its own relaunch.
+static bool runUpdates(PadState *pad, bool fromMenu) {
     consoleClear();
     drawHeader();
     printf("Checking for updates...\n");
     consoleUpdate(NULL);
 
     Grid0plusUpdate upd = update_check();
+    bool grid0Mode = apply_current_mode() == GRID0PLUS_MODE_GRID0PLUS;
+    Grid0plusPatchStatus ps = {0};
+    if (grid0Mode) ps = patches_check();
 
-    if (upd.error != 0) {
+    char errors[400] = {0};
+    if (upd.error) describeNetError(upd.error, "Toolbox update check (GitHub)", errors, sizeof(errors));
+    if (grid0Mode && ps.error) {
         char why[200];
-        switch (upd.error) {
-        case NET_ERR_CONNECT:   snprintf(why, sizeof(why), "Could not connect to GitHub. Check your internet connection."); break;
-        case NET_ERR_TLS:       snprintf(why, sizeof(why), "Could not open a secure connection to GitHub."); break;
-        case NET_ERR_PROTO:     snprintf(why, sizeof(why), "GitHub's release list could not be read."); break;
-        case NET_ERR_NOT_READY: snprintf(why, sizeof(why), "The console's network services could not be started. Restart the Toolbox."); break;
-        case NET_ERR_OOM:       snprintf(why, sizeof(why), "Out of memory."); break;
-        default:
-            if (upd.error > 0) snprintf(why, sizeof(why), "GitHub answered HTTP %d.", upd.error);
-            else snprintf(why, sizeof(why), "Unknown network error (%d).", upd.error);
-        }
-        messageScreen(pad, "Could not check for updates", why);
-        return false;
+        describeNetError(ps.error, "Patch check (GitHub and GRID0+ server)", why, sizeof(why));
+        snprintf(errors + strlen(errors), sizeof(errors) - strlen(errors), "%s%s", errors[0] ? "\n" : "", why);
     }
-    if (!upd.available) {
-        char body[128];
-        snprintf(body, sizeof(body), "You have the latest version (%d.%d.%d).",
-                 GRID0PLUS_VERSION_MAJOR, GRID0PLUS_VERSION_MINOR, GRID0PLUS_VERSION_PATCH);
-        messageScreen(pad, "Up to date", body);
+
+    bool toolbox = !upd.error && upd.toolbox_available;
+    bool sysmodule = !upd.error && upd.sysmodule_available;
+    int gamePatches = ps.error ? 0 : ps.game_changes;
+    int systemPatches = ps.error ? 0 : ps.system_changes;
+    bool required = toolbox || gamePatches || systemPatches;
+
+    if (!required && !sysmodule) {
+        if (errors[0]) messageScreen(pad, "Could not check for updates", errors);
+        else if (fromMenu) messageScreen(pad, "Up to date", "The Toolbox, the patches and sys-GRID0+ are all current.");
         return false;
     }
 
-    int choice = 0;
-    const char *choices[] = { "Toolbox only", "sys-GRID0+ and overlay only", "Both" };
+    bool takeSysmodule = sysmodule;
     while (appletMainLoop()) {
         padUpdate(pad);
         u64 k = padGetButtonsDown(pad);
-        if (k & HidNpadButton_B) return false;
-        if (k & HidNpadButton_Up) choice = (choice + 2) % 3;
-        if (k & HidNpadButton_Down) choice = (choice + 1) % 3;
-        consoleClear(); drawHeader();
-        printf("Release %s available\n\n", upd.tag);
-        printf("Toolbox: %s\nsys-GRID0+: %s\n\n",
-               upd.toolbox_available ? "new version" : "already current",
-               upd.sysmodule_available ? "new or untracked installation" : "already current");
-        for (int i = 0; i < 3; i++) printf("%s %s\n", choice == i ? ">" : " ", choices[i]);
-        printf("\nSettings and sysmodule enable state are preserved.\n(A) Install selected components   (B) Cancel\n");
-        consoleUpdate(NULL);
-        if (k & HidNpadButton_A) {
-            if ((choice == 0 && !upd.toolbox_available) || (choice == 1 && !upd.sysmodule_available)) continue;
-            break;
+        if ((k & HidNpadButton_Y) && sysmodule) takeSysmodule = !takeSysmodule;
+        if (k & HidNpadButton_A) break;
+        if (required && (k & HidNpadButton_Plus)) return true;
+        if (!required && (k & (HidNpadButton_B | HidNpadButton_Plus))) return false;
+
+        consoleClear();
+        drawHeader();
+        printf("Updates available\n\n");
+        if (required) {
+            printf("Required:\n");
+            if (toolbox) printf("  - Toolbox %d.%d.%d\n", upd.maj, upd.min, upd.patch);
+            if (gamePatches) printf("  - Splatoon 3 patches (%d file%s): apply at the next game launch\n",
+                                    gamePatches, gamePatches == 1 ? "" : "s");
+            if (systemPatches) printf("  - System patches (%d file%s): need a console restart\n",
+                                      systemPatches, systemPatches == 1 ? "" : "s");
+            printf("\n");
         }
+        if (sysmodule) {
+            printf("Optional:\n  [%c] sys-GRID0+ sysmodule and overlay (%s)\n\n",
+                   takeSysmodule ? 'x' : ' ', upd.tag);
+        }
+        if (errors[0]) printf("%s\n\n", errors);
+        if (required)
+            printf("(A) Update   %s(+) Exit the Toolbox\n", sysmodule ? "(Y) Toggle sysmodule   " : "");
+        else
+            printf("(A) Update   (Y) Toggle   (B) Skip\n");
+        consoleUpdate(NULL);
         svcSleepThread(16000000ULL);
     }
-    if (!appletMainLoop()) return false;
-    Grid0plusUpdateTarget target = choice == 0 ? GRID0PLUS_UPDATE_TOOLBOX :
-                                     choice == 1 ? GRID0PLUS_UPDATE_SYSMODULE : GRID0PLUS_UPDATE_BOTH;
-    target = (Grid0plusUpdateTarget)(target &
-        ((upd.toolbox_available ? GRID0PLUS_UPDATE_TOOLBOX : 0) |
-         (upd.sysmodule_available ? GRID0PLUS_UPDATE_SYSMODULE : 0)));
-    s_updLastPct = -1;
-    Grid0plusUpdateResult res = update_apply(upd.size, target, updateProgressCb);
+    if (!appletMainLoop()) return true;
+    if (!required && !takeSysmodule) return false;
 
-    switch (res) {
-        case GRID0PLUS_UPDATE_OK:
-            if ((target & GRID0PLUS_UPDATE_TOOLBOX) && envHasNextLoad()) {
-                messageScreen(pad, "Update installed",
-                              (target & GRID0PLUS_UPDATE_SYSMODULE) ?
-                              "The Toolbox restarts now. Reboot later to load the updated sysmodule." :
-                              "The Toolbox restarts now with the new version.");
-                if (R_SUCCEEDED(envSetNextLoad(TOOLBOX_NRO_PATH, TOOLBOX_NRO_PATH))) return true;
-                grid0plus_trace("update: could not queue the Toolbox relaunch");
-                messageScreen(pad, "Update installed", "Close and relaunch the Toolbox to use the new version.");
-                break;
-            }
-            messageScreen(pad, "Update installed",
-                          (target & GRID0PLUS_UPDATE_TOOLBOX) ?
-                          "Close and relaunch the Toolbox to use the new version." :
-                          "Reboot to load the updated sysmodule. Settings and boot flag are unchanged.");
-            break;
+    // Patches first: if the Toolbox then replaces and relaunches itself, they
+    // are already in place.
+    bool patchesOk = installPatches(pad, &ps);
+    if (!patchesOk && required && !toolbox) return false;
+
+    Grid0plusUpdateTarget target = (Grid0plusUpdateTarget)((toolbox ? GRID0PLUS_UPDATE_TOOLBOX : 0) |
+                                                         (takeSysmodule ? GRID0PLUS_UPDATE_SYSMODULE : 0));
+    if (target) {
+        s_updLastPct = -1;
+        switch (update_apply(upd.size, target, updateProgressCb)) {
+        case GRID0PLUS_UPDATE_OK: break;
         case GRID0PLUS_UPDATE_SIZE_FAIL:
             messageScreen(pad, "Update failed", "Downloaded file size did not match. Try again.");
-            break;
+            return false;
         case GRID0PLUS_UPDATE_WRITE_FAIL:
             messageScreen(pad, "Update failed", "Could not write to the SD card.");
-            break;
+            return false;
         default:
             messageScreen(pad, "Update failed", "Network error. Check your connection and try again.");
-            break;
+            return false;
+        }
+    }
+
+    bool needsReboot = (patchesOk && systemPatches) || (target & GRID0PLUS_UPDATE_SYSMODULE);
+    if (needsReboot) {
+        if (confirmScreen(pad, "Update installed",
+                          "System patches or the sysmodule changed: they load when the console starts.\n"
+                          "Restart the console now?")) {
+            consoleClear(); drawHeader();
+            printf("Rebooting...\n");
+            consoleUpdate(NULL);
+            svcSleepThread(1200000000ULL);
+            grid0plus_reboot();
+            messageScreen(pad, "Reboot failed", "Please restart the console manually.");
+        }
+    } else if (patchesOk && gamePatches) {
+        messageScreen(pad, "Patches installed", "If Splatoon 3 is open, close it and start it again.");
+    }
+
+    if (target & GRID0PLUS_UPDATE_TOOLBOX) {
+        if (envHasNextLoad() && R_SUCCEEDED(envSetNextLoad(TOOLBOX_NRO_PATH, TOOLBOX_NRO_PATH))) {
+            messageScreen(pad, "Toolbox updated", "The Toolbox restarts now with the new version.");
+            return true;
+        }
+        grid0plus_trace("update: could not queue the Toolbox relaunch");
+        messageScreen(pad, "Toolbox updated", "Close and relaunch the Toolbox to use the new version.");
+        return true;
     }
     return false;
 }
@@ -354,6 +416,9 @@ int main(int argc, char **argv) {
     PadState pad;
     padInitializeDefault(&pad);
 
+    // Every launch, before the menu: see runUpdates.
+    if (runUpdates(&pad, false)) goto done;
+
     int sel = 0;
     char status[192] = {0};
 
@@ -384,6 +449,23 @@ int main(int argc, char **argv) {
                              "This will redirect Nintendo online traffic to %s and reboot the console. Continue?",
                              g_server_ip);
                     if (confirmScreen(&pad, "Switch to GRID0+", body)) {
+                        // GRID0+ does not work without its patches, and none
+                        // ship in the Toolbox: download them before anything
+                        // on the card changes.
+                        consoleClear(); drawHeader();
+                        printf("Downloading patches...\n");
+                        consoleUpdate(NULL);
+                        Grid0plusPatchStatus ps = patches_check();
+                        if (ps.error) {
+                            char why[160];
+                            describeNetError(ps.error, "Patch download", why, sizeof(why));
+                            snprintf(status, sizeof(status), "Not switched. %s", why);
+                            break;
+                        }
+                        if (!installPatches(&pad, &ps)) {
+                            snprintf(status, sizeof(status), "Not switched: the patches could not be installed.");
+                            break;
+                        }
                         bool ok = apply_grid0plus(g_server_ip);
                         if (ok) {
                             consoleClear(); drawHeader();
@@ -444,7 +526,7 @@ int main(int argc, char **argv) {
                     config_set_restore_on_default(!config_get_restore_on_default());
                     break;
                 case MENU_CHECK_UPDATE:
-                    if (runUpdateFlow(&pad)) goto done;
+                    if (runUpdates(&pad, true)) goto done;
                     break;
                 case MENU_SERVER_STATUS:
                     runServerStatusFlow(&pad);

@@ -83,7 +83,7 @@ static void removeTree(const char *srcDir, const char *dstDir) {
 // hashes -- there is no fixed filename list to remove one at a time, but the
 // directory name itself is exclusively ours, so it's safe to take everything
 // under it.
-static void removeDirAndContents(const char *dir) {
+void grid0plus_remove_dir_and_contents(const char *dir) {
     DIR *d = opendir(dir);
     if (!d) { rmdir(dir); return; }
     struct dirent *e;
@@ -92,7 +92,7 @@ static void removeDirAndContents(const char *dir) {
         char p[FS_MAX_PATH];
         snprintf(p, sizeof(p), "%s/%s", dir, e->d_name);
         struct stat st;
-        if (stat(p, &st) == 0 && S_ISDIR(st.st_mode)) removeDirAndContents(p);
+        if (stat(p, &st) == 0 && S_ISDIR(st.st_mode)) grid0plus_remove_dir_and_contents(p);
         else remove(p);
     }
     closedir(d);
@@ -146,12 +146,21 @@ static const char *const LEGACY_OWNED_DIRS[] = {
     "sdmc:/atmosphere/exefs_patches/s3moveless_test",
     "sdmc:/atmosphere/nro_patches/disable_browser_ca_verification",
     "sdmc:/GRID0plus/certs",
+    // Bundled in the romfs until patches moved to patches-<serial> releases
+    // (patches.c). A console that never ran a newer Toolbox in GRID0+ mode
+    // has them with no patches-installed.txt entry to remove them by.
+    "sdmc:/atmosphere/exefs_patches/s3grpcpeer_bypass",
+    "sdmc:/atmosphere/exefs_patches/s3grpcverify_bypass",
+    "sdmc:/atmosphere/exefs_patches/s3moveless_bypass",
+    "sdmc:/atmosphere/exefs_patches/s3smallmatch_bypass",
+    "sdmc:/atmosphere/exefs_patches/bcat_signature_bypass",
+    "sdmc:/atmosphere/exefs_patches/account_delete_user_fix",
 };
 #define LEGACY_OWNED_DIR_COUNT (sizeof(LEGACY_OWNED_DIRS) / sizeof(LEGACY_OWNED_DIRS[0]))
 
 static void purgeLegacyOwnedPaths(void) {
     for (size_t i = 0; i < LEGACY_OWNED_FILE_COUNT; i++) remove(LEGACY_OWNED_FILES[i]);
-    for (size_t i = 0; i < LEGACY_OWNED_DIR_COUNT; i++) removeDirAndContents(LEGACY_OWNED_DIRS[i]);
+    for (size_t i = 0; i < LEGACY_OWNED_DIR_COUNT; i++) grid0plus_remove_dir_and_contents(LEGACY_OWNED_DIRS[i]);
 
     // Best-effort: 0100000000000803 is LibraryAppletWeb's real title ID, so
     // other homebrew could legitimately have its own override living
@@ -162,56 +171,10 @@ static void purgeLegacyOwnedPaths(void) {
     rmdir("sdmc:/atmosphere/contents/0100000000000803");
 }
 
-// exefs_patches and nro_patches leaves are named by opaque per-firmware
-// build-ID hash, not by a fixed filename copyTree's overwrite-in-place can
-// keep in sync. If a later GRID0+ release ships a SMALLER set for a patch
-// name -- dropping a build id, or picking up a corrected upstream file under
-// the same name as an old broken one -- copyTree alone leaves every
-// previously-written file sitting there untouched, because nothing removes
-// what the current romfs no longer mentions. That is exactly what this
-// project measured causing 2123-0308 on a real console: the old on-SD
-// disable_ca_verification carried an incomplete build-id set for its
-// firmware, and copyTree's own "only ever gains files" behaviour meant
-// simply reapplying a newer GRID0+ build could never fix it by itself.
-//
-// So before copyTree runs, every patch-name directory the CURRENT romfs
-// ships under exefs_patches/ or nro_patches/ is deleted wholesale from the
-// SD first -- read from the romfs itself, not a hardcoded list, so this
-// stays in sync automatically as patch names are added or removed. Only
-// entries copyTree is about to fully repopulate are touched; anything else
-// sharing exefs_patches/nro_patches (other homebrew's own patches) is left
-// alone, the same reasoning purgeLegacyOwnedPaths above already applies to
-// LEGACY_OWNED_DIRS.
-static void cleanProvisionedPatchDirs(void) {
-    static const char *const GROUPS[] = {
-        "atmosphere/exefs_patches",
-        "atmosphere/nro_patches",
-    };
-    for (size_t g = 0; g < sizeof(GROUPS) / sizeof(GROUPS[0]); g++) {
-        char srcDir[FS_MAX_PATH];
-        snprintf(srcDir, sizeof(srcDir), "%s/%s", PROVISION_SRC_ROOT, GROUPS[g]);
-        DIR *d = opendir(srcDir);
-        if (!d) continue;
-        struct dirent *e;
-        while ((e = readdir(d)) != NULL) {
-            if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, "..")) continue;
-            char sp[FS_MAX_PATH];
-            snprintf(sp, sizeof(sp), "%s/%s", srcDir, e->d_name);
-            struct stat st;
-            if (stat(sp, &st) != 0 || !S_ISDIR(st.st_mode)) continue;
-            char dp[FS_MAX_PATH];
-            snprintf(dp, sizeof(dp), "%s/%s/%s", PROVISION_DST_ROOT, GROUPS[g], e->d_name);
-            removeDirAndContents(dp);
-        }
-        closedir(d);
-    }
-}
-
 bool certs_provision(void) {
-    cleanProvisionedPatchDirs();
     bool ok = copyTree(PROVISION_SRC_ROOT, PROVISION_DST_ROOT);
     fsdevCommitDevice("sdmc");
-    grid0plus_trace(ok ? "certs: provisioned (CA + CA-bypass patches)"
+    grid0plus_trace(ok ? "certs: provisioned (CA)"
                        : "certs: some files failed to provision");
     return ok;
 }

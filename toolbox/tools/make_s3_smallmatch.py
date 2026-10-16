@@ -90,7 +90,7 @@ def main():
             if data[rva:rva + len(bytes.fromhex(expected))] != bytes.fromhex(expected):
                 raise SystemExit(f"Unexpected instruction at {rva:#x}; do not patch this build")
     root = Path(__file__).resolve().parent.parent
-    output = root / "romfs/sd/atmosphere/exefs_patches/s3smallmatch_bypass"
+    output = root.parent / "patches/game/0100C2500FC20000/exefs_patches/s3smallmatch_bypass"
     output.mkdir(parents=True, exist_ok=True)
     args = [arg for rva, _, patch in RECORDS for arg in (hex(rva), patch)]
     first = output / f"{BUILD_ID}.ips"

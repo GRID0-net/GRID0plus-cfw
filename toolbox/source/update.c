@@ -1,4 +1,5 @@
 #include "update.h"
+#include "json.h"
 #include "config.h"
 #include "net.h"
 #include "version.h"
@@ -37,8 +38,8 @@ static void progressRelay(long received, long total) {
 }
 
 // Walk complete JSON values so an asset cannot borrow fields from its sibling.
-static const char *jsonSpace(const char *p) { while (isspace((unsigned char)*p)) p++; return p; }
-static const char *jsonEnd(const char *p, unsigned depth) {
+const char *jsonSpace(const char *p) { while (isspace((unsigned char)*p)) p++; return p; }
+const char *jsonEnd(const char *p, unsigned depth) {
     p = jsonSpace(p);
     if (depth > 32 || !*p) return NULL;
     if (*p == '"') {
@@ -61,7 +62,7 @@ static const char *jsonEnd(const char *p, unsigned depth) {
     while (*p && !isspace((unsigned char)*p) && !strchr(",:}]", *p)) p++;
     return p != begin ? p : NULL;
 }
-static const char *jsonField(const char *object, const char *key) {
+const char *jsonField(const char *object, const char *key) {
     const char *p = jsonSpace(object);
     if (*p++ != '{') return NULL;
     while (*(p = jsonSpace(p)) != '}') {
@@ -80,7 +81,7 @@ static const char *jsonField(const char *object, const char *key) {
     }
     return NULL;
 }
-static bool jsonString(const char *p, char *out, size_t cap) {
+bool jsonString(const char *p, char *out, size_t cap) {
     if (!p || *p != '"') return false;
     const char *end = jsonEnd(p, 0);
     if (!end || (size_t)(end - p - 2) >= cap) return false;
@@ -198,7 +199,7 @@ static bool zipPathSafe(const char *name) {
     return true;
 }
 
-static bool mkdirParents(const char *path) {
+bool mkdirParents(const char *path) {
     char tmp[1024];
     size_t n = strlen(path);
     if (n == 0 || n >= sizeof(tmp)) return false;
@@ -215,7 +216,7 @@ static bool mkdirParents(const char *path) {
 
 // Horizon's rename does not provide POSIX overwrite semantics. Move the old
 // binary aside first and restore it if placing the staged replacement fails.
-static bool installStagedFile(const char *temporary, const char *destination) {
+bool installStagedFile(const char *temporary, const char *destination) {
     char backup[1056]; size_t n = strlen(destination);
     if (n + sizeof(".grid0-update.bak") > sizeof(backup)) return false;
     memcpy(backup, destination, n);

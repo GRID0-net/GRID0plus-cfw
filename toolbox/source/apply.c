@@ -3,6 +3,7 @@
 #include "certs.h"
 #include "config.h"
 #include "hosts.h"
+#include "patches.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -55,6 +56,7 @@ bool apply_default(void) {
     }
 
     certs_remove();
+    patches_remove_all();
 
     // If our redirections are really gone, keep DNS-MITM on with Atmosphère's
     // own defaults merged in, that's strictly more private than turning

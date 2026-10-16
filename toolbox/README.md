@@ -41,12 +41,12 @@ GRID0+ IP : 89.168.58.206
 - **Certificate provisioning (stubs for now).** GRID0+'s certificate
   material is copied into place alongside the hosts change. The actual
   certificate isn't included yet, see [Certificates](#certificates) below.
-- **On-demand auto-updater.** "Check for updates" asks GRID0+'s own
-  toolbox API (not GitHub directly, this repo is private, so an
-  unauthenticated request for its releases would just 404) whether a newer
-  `.nro` is tagged, and if so downloads and installs it over the file you're
-  currently running. It never phones home on its own, only when you press
-  the button. See [Updates & server status](#updates--server-status) below.
+- **Updates on every launch.** Before the menu opens, the Toolbox checks
+  GitHub for a newer Toolbox, newer IPS patches and a newer sys-GRID0+
+  sysmodule. The Toolbox and the patches are required: the only alternative
+  to updating them is leaving the app. The sysmodule is an optional
+  checkbox. If the check cannot reach anything, the menu opens anyway. See
+  [Updates & server status](#updates--server-status) below.
 - **Server status.** Shows a coarse ok/degraded/down/unknown for each
   GRID0+ service (dauth, aauth, baas, stubs, npln, dashboard, dns,
   natcheck), from the same toolbox API. No error detail, no credential
@@ -65,7 +65,8 @@ GRID0+ IP : 89.168.58.206
 | DNS-MITM on/off | `/atmosphere/config/system_settings.ini` |
 | Hosts backup | `sdmc:/GRID0plus/hosts_backup/` (mirrors the whole hosts folder) |
 | App settings (IP, flags) | `sdmc:/GRID0plus/config.cfg` |
-| Certificates & CA-bypass patches | `romfs/sd/` mirrored onto the SD card root, `rootCA.pem`, the browser CA bundle, and the `exefs_patches`/`nro_patches` below |
+| Certificates | `romfs/sd/` mirrored onto the SD card root: `rootCA.pem` and the browser CA bundle |
+| IPS patches | downloaded into `/atmosphere/exefs_patches/` and `/atmosphere/nro_patches/`; what was installed is listed in `sdmc:/GRID0plus/patches-installed.txt` |
 | Debug trace | `sdmc:/GRID0plus/trace.txt` |
 
 Because it only writes files Atmosphère (and the console's browser applet)
@@ -89,6 +90,13 @@ onto the SD card, at the same relative path, when GRID0+ mode is applied
   time) at `grid0plus/certs/grid0plus_root_ca.pem`, `rootCA.pem`, and the
   console's browser-applet CA bundle under
   `atmosphere/contents/0100000000000803/romfs/browser/`.
+The IPS patches below used to ship in `romfs/sd/` too. Since 0.9.0 none are
+bundled: they live in the repository's [`patches/`](../patches/README.md)
+directory, are published as `patches-<serial>` releases, and the Toolbox
+downloads them (see [Updates](#updates--server-status)). Switching to GRID0+
+downloads them before anything on the card changes, and refuses to switch if
+it cannot.
+
 - **`disable_ca_verification`** (`atmosphere/exefs_patches/`) and
   **`disable_browser_ca_verification`** (`atmosphere/nro_patches/`), the
   public per-firmware-build-ID IPS patches from
@@ -179,13 +187,27 @@ releases it, and existing installs pick it up through the in-app updater.
 
 ## Updates & server status
 
-The in-app updater reads GitHub's public release list, including sysmodule-only
-`-sys.N` releases, and offers **Toolbox only**, **sys-GRID0+ and overlay only**,
-or **Both**. It downloads the selected release's combined ZIP using its exact
-tag. Components already current are left alone when selecting Both.
+Every launch, before the menu, the Toolbox checks three things in one pass:
+
+- **the Toolbox itself**, from GitHub's public release list;
+- **the IPS patches** (in GRID0+ mode only), from the newest `patches-<serial>`
+  release. It hashes every patch file it installed on the card and compares
+  it with that release's `manifest.json`, so a patch that changed, went
+  missing or was dropped is noticed. If GitHub cannot be reached, the same
+  `manifest.json` and `patches.zip` are read from the GRID0+ server at
+  `g_server_ip:8443/grid0plus/patches/`;
+- **the sys-GRID0+ sysmodule**, from the same release list as the Toolbox.
+
+If anything changed, one dialog lists it. The Toolbox and the patches are
+required, so the dialog offers Update or Exit; the sysmodule is an optional
+checkbox. Patches are installed first, from one download of `patches.zip`,
+each file checked against its SHA-256 before it replaces anything. Splatoon 3
+patches apply the next time the game starts. System patches and the sysmodule
+load at boot, so the Toolbox then offers to restart the console. A Toolbox
+update relaunches the Toolbox.
+
 Settings, identities, hosts and the sysmodule boot flag are never extracted.
 Installing a previously absent sysmodule does not automatically enable it.
-Sysmodule updates take effect after a reboot; Toolbox updates after relaunch.
 The last installed sysmodule bundle is tracked in
 `/GRID0plus/sys-grid0-installed-release.txt`; an older manual installation has
 no marker and is offered an update once. This records what is installed on SD,
@@ -226,7 +248,8 @@ hardware you own, running Atmosphère custom firmware you've set up yourself.
 ### Upgrading older Toolbox versions
 
 Version 0.8.3 temporarily restricted updates to the Toolbox. Version 0.8.4
-replaces that freeze with the explicit component selector. An older updater
+replaced that freeze with an explicit component selector, and 0.9.0 replaced
+the selector with the startup dialog described above. An older updater
 still follows its own behavior: manually replace only
 `/switch/grid0plus-toolbox.nro` to get this selector without unintentionally
 installing or enabling the sysmodule. Future checks use the choices above.

@@ -44,6 +44,11 @@ for p in json.load(open("patches/manifest.json"))["patches"]:
     if hashlib.sha256(src.read_bytes()).hexdigest() != p["sha256"]:
         sys.exit(f"{src}: hash does not match the manifest")
     shutil.copyfile(src, stage / p["asset"])
+# The Toolbox downloads everything in one request instead of one per file.
+import zipfile
+with zipfile.ZipFile(stage / "patches.zip", "w", zipfile.ZIP_DEFLATED) as z:
+    for f in sorted(stage.glob("*.ips")):
+        z.write(f, f.name)
 EOF
 
 echo "Publishing $TAG from $(git rev-parse --short HEAD) with $(ls "$STAGE" | wc -l) files"

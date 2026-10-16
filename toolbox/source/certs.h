@@ -6,18 +6,10 @@
 //  - GRID0+'s root CA (the actual certificate, embedded at build time)
 //    at the paths the browser applet's CA bundle and WebView-based account
 //    linking read from, plus a reference copy under sdmc:/GRID0plus/certs/.
-//  - The public disable_ca_verification / disable_browser_ca_verification
-//    ExeFS/NRO IPS patches (from misson20000/exefs_patches, one file per
-//    firmware build ID) that make the system SSL service and the browser
-//    applet skip the stock CA check. Without these, installing the CA alone
-//    is not enough: the browser still rejects a self-signed certificate, and
-//    account linking fails to load (this is what error 2123-0308 during
-//    account linking generally means).
 //
-// Atmosphère only applies a patch whose build-ID filename matches the
-// firmware actually running, so shipping patches for every supported
-// firmware is harmless on any given console, unmatched ones simply sit
-// unused.
+// The IPS patches that make the system SSL service and the browser applet
+// accept that CA used to ship here too; they are now downloaded by
+// patches.c, from the same releases as every other patch.
 #ifndef GRID0PLUS_CERTS_H
 #define GRID0PLUS_CERTS_H
 
@@ -41,5 +33,9 @@ bool certs_provision(void);
 // clean up, orphaned, not wrong-content (copyFile always overwrites
 // same-path files), but still GRID0+'s to remove.
 void certs_remove(void);
+
+// Deletes `dir` and everything under it. Only for directories that are
+// exclusively GRID0+'s.
+void grid0plus_remove_dir_and_contents(const char *dir);
 
 #endif // GRID0PLUS_CERTS_H
