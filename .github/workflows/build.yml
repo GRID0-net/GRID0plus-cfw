@@ -45,6 +45,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check the patches manifest
+        run: python3 -I tools/patches_manifest.py --check
+
       - name: Read version
         id: version
         run: |

@@ -1,0 +1,929 @@
+{
+  "serial": 1,
+  "patches": [
+    {
+      "name": "s3certpin_bypass",
+      "kind": "game",
+      "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75",
+      "dest": "exefs_patches/s3certpin_bypass/28C4287AEE36F7499DA60F3E68B54C70DA382D75.ips",
+      "size": 21,
+      "sha256": "4ca7681d1f2d4a88699f38bf0c1fef6a17226b5ff89ee8be0a12085b5e90d4c4",
+      "asset": "4ca7681d1f2d4a88699f38bf0c1fef6a17226b5ff89ee8be0a12085b5e90d4c4.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3certpin_bypass",
+      "kind": "game",
+      "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75000000000000000000000000",
+      "dest": "exefs_patches/s3certpin_bypass/28C4287AEE36F7499DA60F3E68B54C70DA382D75000000000000000000000000.ips",
+      "size": 21,
+      "sha256": "4ca7681d1f2d4a88699f38bf0c1fef6a17226b5ff89ee8be0a12085b5e90d4c4",
+      "asset": "4ca7681d1f2d4a88699f38bf0c1fef6a17226b5ff89ee8be0a12085b5e90d4c4.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3grpcpeer_bypass",
+      "kind": "game",
+      "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75",
+      "dest": "exefs_patches/s3grpcpeer_bypass/28C4287AEE36F7499DA60F3E68B54C70DA382D75.ips",
+      "size": 26,
+      "sha256": "bbd9c0b8cb3940907a860cd34c12fa65d8e308a5c907cba054316ce47521b3b4",
+      "asset": "bbd9c0b8cb3940907a860cd34c12fa65d8e308a5c907cba054316ce47521b3b4.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3grpcpeer_bypass",
+      "kind": "game",
+      "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75000000000000000000000000",
+      "dest": "exefs_patches/s3grpcpeer_bypass/28C4287AEE36F7499DA60F3E68B54C70DA382D75000000000000000000000000.ips",
+      "size": 26,
+      "sha256": "bbd9c0b8cb3940907a860cd34c12fa65d8e308a5c907cba054316ce47521b3b4",
+      "asset": "bbd9c0b8cb3940907a860cd34c12fa65d8e308a5c907cba054316ce47521b3b4.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3grpcverify_bypass",
+      "kind": "game",
+      "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75",
+      "dest": "exefs_patches/s3grpcverify_bypass/28C4287AEE36F7499DA60F3E68B54C70DA382D75.ips",
+      "size": 17,
+      "sha256": "80d1c8550017695f699aa4fe569b425250b8bf5ee417815ba158fd4ab7d0cfdc",
+      "asset": "80d1c8550017695f699aa4fe569b425250b8bf5ee417815ba158fd4ab7d0cfdc.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3grpcverify_bypass",
+      "kind": "game",
+      "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75000000000000000000000000",
+      "dest": "exefs_patches/s3grpcverify_bypass/28C4287AEE36F7499DA60F3E68B54C70DA382D75000000000000000000000000.ips",
+      "size": 17,
+      "sha256": "80d1c8550017695f699aa4fe569b425250b8bf5ee417815ba158fd4ab7d0cfdc",
+      "asset": "80d1c8550017695f699aa4fe569b425250b8bf5ee417815ba158fd4ab7d0cfdc.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3moveless_bypass",
+      "kind": "game",
+      "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75",
+      "dest": "exefs_patches/s3moveless_bypass/28C4287AEE36F7499DA60F3E68B54C70DA382D75.ips",
+      "size": 19,
+      "sha256": "dc41a2016593800b26f903015f7ed131e7e293bba01cff96dc94c7076bd10aff",
+      "asset": "dc41a2016593800b26f903015f7ed131e7e293bba01cff96dc94c7076bd10aff.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3moveless_bypass",
+      "kind": "game",
+      "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75000000000000000000000000",
+      "dest": "exefs_patches/s3moveless_bypass/28C4287AEE36F7499DA60F3E68B54C70DA382D75000000000000000000000000.ips",
+      "size": 19,
+      "sha256": "dc41a2016593800b26f903015f7ed131e7e293bba01cff96dc94c7076bd10aff",
+      "asset": "dc41a2016593800b26f903015f7ed131e7e293bba01cff96dc94c7076bd10aff.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3smallmatch_bypass",
+      "kind": "game",
+      "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75",
+      "dest": "exefs_patches/s3smallmatch_bypass/28C4287AEE36F7499DA60F3E68B54C70DA382D75.ips",
+      "size": 1035,
+      "sha256": "80c0c81cabf0109dc1a0253518d252431a4e55873d7960dc2c0b2d803f305be2",
+      "asset": "80c0c81cabf0109dc1a0253518d252431a4e55873d7960dc2c0b2d803f305be2.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3smallmatch_bypass",
+      "kind": "game",
+      "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75000000000000000000000000",
+      "dest": "exefs_patches/s3smallmatch_bypass/28C4287AEE36F7499DA60F3E68B54C70DA382D75000000000000000000000000.ips",
+      "size": 1035,
+      "sha256": "80c0c81cabf0109dc1a0253518d252431a4e55873d7960dc2c0b2d803f305be2",
+      "asset": "80c0c81cabf0109dc1a0253518d252431a4e55873d7960dc2c0b2d803f305be2.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3verifyoption_bypass",
+      "kind": "game",
+      "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75",
+      "dest": "exefs_patches/s3verifyoption_bypass/28C4287AEE36F7499DA60F3E68B54C70DA382D75.ips",
+      "size": 17,
+      "sha256": "e29637250e57f52cfd55dfa7e4ebd991078e92ab89d85c68f12aa2f5225eedcc",
+      "asset": "e29637250e57f52cfd55dfa7e4ebd991078e92ab89d85c68f12aa2f5225eedcc.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3verifyoption_bypass",
+      "kind": "game",
+      "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75000000000000000000000000",
+      "dest": "exefs_patches/s3verifyoption_bypass/28C4287AEE36F7499DA60F3E68B54C70DA382D75000000000000000000000000.ips",
+      "size": 17,
+      "sha256": "e29637250e57f52cfd55dfa7e4ebd991078e92ab89d85c68f12aa2f5225eedcc",
+      "asset": "e29637250e57f52cfd55dfa7e4ebd991078e92ab89d85c68f12aa2f5225eedcc.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "bcat_signature_bypass",
+      "kind": "system",
+      "build_id": "6D9772A733E2370B3F401EFEB7CA8F664309BD66",
+      "dest": "exefs_patches/bcat_signature_bypass/6D9772A733E2370B3F401EFEB7CA8F664309BD66.ips",
+      "size": 17,
+      "sha256": "f40ddb2e7807b9e94763c56ad0636a9cf017d25d49bf890c9f84e3c3f0bd7d1c",
+      "asset": "f40ddb2e7807b9e94763c56ad0636a9cf017d25d49bf890c9f84e3c3f0bd7d1c.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "bcat_signature_bypass",
+      "kind": "system",
+      "build_id": "6D9772A733E2370B3F401EFEB7CA8F664309BD66000000000000000000000000",
+      "dest": "exefs_patches/bcat_signature_bypass/6D9772A733E2370B3F401EFEB7CA8F664309BD66000000000000000000000000.ips",
+      "size": 17,
+      "sha256": "f40ddb2e7807b9e94763c56ad0636a9cf017d25d49bf890c9f84e3c3f0bd7d1c",
+      "asset": "f40ddb2e7807b9e94763c56ad0636a9cf017d25d49bf890c9f84e3c3f0bd7d1c.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "095E912CCC7E37448437DAE6BDD5702D6CC9AAE9",
+      "dest": "exefs_patches/disable_ca_verification/095E912CCC7E37448437DAE6BDD5702D6CC9AAE9.ips",
+      "size": 41,
+      "sha256": "eac9566c4098f394088098319fdab30c07a9181dc10a0925258e4881ad156789",
+      "asset": "eac9566c4098f394088098319fdab30c07a9181dc10a0925258e4881ad156789.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "0A6CD7F6CF67BEB4DC9FFFC999EB37A80A788793000000000000000000000000",
+      "dest": "exefs_patches/disable_ca_verification/0A6CD7F6CF67BEB4DC9FFFC999EB37A80A788793000000000000000000000000.ips",
+      "size": 23,
+      "sha256": "ccada30985fcf69924d3f82075afaf967c464bfcdf5d5a68d0191b3dd116ad78",
+      "asset": "ccada30985fcf69924d3f82075afaf967c464bfcdf5d5a68d0191b3dd116ad78.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "12FB8206DEBF729341ECE612A3F7BC3E66FA104E000000000000000000000000",
+      "dest": "exefs_patches/disable_ca_verification/12FB8206DEBF729341ECE612A3F7BC3E66FA104E000000000000000000000000.ips",
+      "size": 32,
+      "sha256": "90508278b54afda3612217db449b0578972b59a9196e8a6f510d8adcb1a2ae8a",
+      "asset": "90508278b54afda3612217db449b0578972b59a9196e8a6f510d8adcb1a2ae8a.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "1A3FC66488E555DCBB4D42F463FA774C1D996034",
+      "dest": "exefs_patches/disable_ca_verification/1A3FC66488E555DCBB4D42F463FA774C1D996034.ips",
+      "size": 41,
+      "sha256": "473105d4fb960226c5d228a2d787176d3bb0f35089540aaefcf328cb6af86abf",
+      "asset": "473105d4fb960226c5d228a2d787176d3bb0f35089540aaefcf328cb6af86abf.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "22EB12F05B9AC3CEF3E207350E388E85D4495FDB000000000000000000000000",
+      "dest": "exefs_patches/disable_ca_verification/22EB12F05B9AC3CEF3E207350E388E85D4495FDB000000000000000000000000.ips",
+      "size": 23,
+      "sha256": "d723d0e4ad7dfeb9dc476b1f4ffc47ae0b2020400759f6de516d6d072937e041",
+      "asset": "d723d0e4ad7dfeb9dc476b1f4ffc47ae0b2020400759f6de516d6d072937e041.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "300C3CEADC61A465E4A89F34B497F72288BCC990",
+      "dest": "exefs_patches/disable_ca_verification/300C3CEADC61A465E4A89F34B497F72288BCC990.ips",
+      "size": 41,
+      "sha256": "c4ac2fac1b522f157ca1880bdfd972f8769ac3e5e8137a4190aca6c0ef54ff4e",
+      "asset": "c4ac2fac1b522f157ca1880bdfd972f8769ac3e5e8137a4190aca6c0ef54ff4e.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "41510266E1CF6CAC72300CE717B31180232EEEED000000000000000000000000",
+      "dest": "exefs_patches/disable_ca_verification/41510266E1CF6CAC72300CE717B31180232EEEED000000000000000000000000.ips",
+      "size": 23,
+      "sha256": "4da7125e521c90beaf28a889f9b62d162b1836c7d23b012ad162c288c278ea5a",
+      "asset": "4da7125e521c90beaf28a889f9b62d162b1836c7d23b012ad162c288c278ea5a.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "43CA1E9E5C0FF3414C1E538267E21296E61B8BFF",
+      "dest": "exefs_patches/disable_ca_verification/43CA1E9E5C0FF3414C1E538267E21296E61B8BFF.ips",
+      "size": 41,
+      "sha256": "1fd61bb579290597e3de2f5e829321b8c939ebcc9d340b5c4b6950786ac51d68",
+      "asset": "1fd61bb579290597e3de2f5e829321b8c939ebcc9d340b5c4b6950786ac51d68.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "46B0C69D8A9D9FDDEC0A88F2EAAB0F9D516516F1000000000000000000000000",
+      "dest": "exefs_patches/disable_ca_verification/46B0C69D8A9D9FDDEC0A88F2EAAB0F9D516516F1000000000000000000000000.ips",
+      "size": 32,
+      "sha256": "da8ab9f3012c01f2fce7d5ecf40944ec6330c11fb22bc6e7bdbec0ba7627d4c5",
+      "asset": "da8ab9f3012c01f2fce7d5ecf40944ec6330c11fb22bc6e7bdbec0ba7627d4c5.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "4855AD7A2C26CC5A9885B271DC7E597332C09089",
+      "dest": "exefs_patches/disable_ca_verification/4855AD7A2C26CC5A9885B271DC7E597332C09089.ips",
+      "size": 41,
+      "sha256": "f7effb41c8f670e394ecf919e5e76865cfaa05df246b84679d3dc4fded1849cc",
+      "asset": "f7effb41c8f670e394ecf919e5e76865cfaa05df246b84679d3dc4fded1849cc.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "4ACF05B67690F3A435C2326C7679BE0F029CC952",
+      "dest": "exefs_patches/disable_ca_verification/4ACF05B67690F3A435C2326C7679BE0F029CC952.ips",
+      "size": 41,
+      "sha256": "c4ac2fac1b522f157ca1880bdfd972f8769ac3e5e8137a4190aca6c0ef54ff4e",
+      "asset": "c4ac2fac1b522f157ca1880bdfd972f8769ac3e5e8137a4190aca6c0ef54ff4e.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "558136EE88623F02F8CB58F574E9BED0E14E5818",
+      "dest": "exefs_patches/disable_ca_verification/558136EE88623F02F8CB58F574E9BED0E14E5818.ips",
+      "size": 39,
+      "sha256": "494a1b2f04d89bf7de1960c9067b76f579be54974b0f2ae683353d37d7f9c8bd",
+      "asset": "494a1b2f04d89bf7de1960c9067b76f579be54974b0f2ae683353d37d7f9c8bd.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "55ACF170049D8676FCDE0EB2FF4A8F3A3528828B",
+      "dest": "exefs_patches/disable_ca_verification/55ACF170049D8676FCDE0EB2FF4A8F3A3528828B.ips",
+      "size": 41,
+      "sha256": "4cdcbe16854273960768ef8520b95b87752c938689d34144e27375638837aed4",
+      "asset": "4cdcbe16854273960768ef8520b95b87752c938689d34144e27375638837aed4.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "637B1B1640D2F99BA79C0BF89C736DCF464B5649",
+      "dest": "exefs_patches/disable_ca_verification/637B1B1640D2F99BA79C0BF89C736DCF464B5649.ips",
+      "size": 32,
+      "sha256": "90508278b54afda3612217db449b0578972b59a9196e8a6f510d8adcb1a2ae8a",
+      "asset": "90508278b54afda3612217db449b0578972b59a9196e8a6f510d8adcb1a2ae8a.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "68A2672CFCB60DC7C3CF4EA1DFD3425FEDD594E7",
+      "dest": "exefs_patches/disable_ca_verification/68A2672CFCB60DC7C3CF4EA1DFD3425FEDD594E7.ips",
+      "size": 41,
+      "sha256": "4cdcbe16854273960768ef8520b95b87752c938689d34144e27375638837aed4",
+      "asset": "4cdcbe16854273960768ef8520b95b87752c938689d34144e27375638837aed4.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "7057EB36BA16C3666E9D230F3834369CC00183EE",
+      "dest": "exefs_patches/disable_ca_verification/7057EB36BA16C3666E9D230F3834369CC00183EE.ips",
+      "size": 41,
+      "sha256": "a9acc94429d34ced506bddc95cc2dee9f42bdbae478e6511ce50969332e8fb33",
+      "asset": "a9acc94429d34ced506bddc95cc2dee9f42bdbae478e6511ce50969332e8fb33.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "71EB62FE5E28B959CBC2BD4BD0AAB1E384837C8B000000000000000000000000",
+      "dest": "exefs_patches/disable_ca_verification/71EB62FE5E28B959CBC2BD4BD0AAB1E384837C8B000000000000000000000000.ips",
+      "size": 23,
+      "sha256": "4da7125e521c90beaf28a889f9b62d162b1836c7d23b012ad162c288c278ea5a",
+      "asset": "4da7125e521c90beaf28a889f9b62d162b1836c7d23b012ad162c288c278ea5a.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "81B819F74FF7DE866DD21EB32FEE91E0888EBF1A",
+      "dest": "exefs_patches/disable_ca_verification/81B819F74FF7DE866DD21EB32FEE91E0888EBF1A.ips",
+      "size": 41,
+      "sha256": "e8192bb27c385dfc00808c9d87fda9ae9821a2aa1bb3aea8b347c83d12db653d",
+      "asset": "e8192bb27c385dfc00808c9d87fda9ae9821a2aa1bb3aea8b347c83d12db653d.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "92B0F02D173C81F2A4E217DE8402258F1F497433000000000000000000000000",
+      "dest": "exefs_patches/disable_ca_verification/92B0F02D173C81F2A4E217DE8402258F1F497433000000000000000000000000.ips",
+      "size": 32,
+      "sha256": "c1fb5a5515c39a9ebec8f4f7c91c49d6bc7890f4cf832f04d56b120cfe0a8353",
+      "asset": "c1fb5a5515c39a9ebec8f4f7c91c49d6bc7890f4cf832f04d56b120cfe0a8353.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "93B46B1A8ADD9FF5CC9A4A31C4A6070662C001FE",
+      "dest": "exefs_patches/disable_ca_verification/93B46B1A8ADD9FF5CC9A4A31C4A6070662C001FE.ips",
+      "size": 32,
+      "sha256": "b2325c851cf52b3ee6d06f89331d03f5c15124fc1d0c9cf80f428afaafcd13e5",
+      "asset": "b2325c851cf52b3ee6d06f89331d03f5c15124fc1d0c9cf80f428afaafcd13e5.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "A60F17844E189167A4E4768F9F15ACF0A9619384",
+      "dest": "exefs_patches/disable_ca_verification/A60F17844E189167A4E4768F9F15ACF0A9619384.ips",
+      "size": 39,
+      "sha256": "fb9e797d15d738708d4ffd50afb7c1660a5b70f9a35f876b6616ad60cba49102",
+      "asset": "fb9e797d15d738708d4ffd50afb7c1660a5b70f9a35f876b6616ad60cba49102.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "B4390658FAB4DE89006B146573A18C21FA729E50",
+      "dest": "exefs_patches/disable_ca_verification/B4390658FAB4DE89006B146573A18C21FA729E50.ips",
+      "size": 41,
+      "sha256": "a9acc94429d34ced506bddc95cc2dee9f42bdbae478e6511ce50969332e8fb33",
+      "asset": "a9acc94429d34ced506bddc95cc2dee9f42bdbae478e6511ce50969332e8fb33.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "B6BAE7FFA6CB7561CDD4E2CD2253A0EB13CCBC06",
+      "dest": "exefs_patches/disable_ca_verification/B6BAE7FFA6CB7561CDD4E2CD2253A0EB13CCBC06.ips",
+      "size": 41,
+      "sha256": "9ea84abd5712c80f1084f488efcce5115345a2eb493e305d182c56142f1e715d",
+      "asset": "9ea84abd5712c80f1084f488efcce5115345a2eb493e305d182c56142f1e715d.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "B925557241DEAA285A11AF9CDF2F40A9610B7751",
+      "dest": "exefs_patches/disable_ca_verification/B925557241DEAA285A11AF9CDF2F40A9610B7751.ips",
+      "size": 41,
+      "sha256": "a7dae2388b9c0f90d0f017f264f0ff69a34c9a5f638b7eb6fa59f172fe20b864",
+      "asset": "a7dae2388b9c0f90d0f017f264f0ff69a34c9a5f638b7eb6fa59f172fe20b864.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "BC240F0AD969DF5C51F563881DE544FF1EC9EA03",
+      "dest": "exefs_patches/disable_ca_verification/BC240F0AD969DF5C51F563881DE544FF1EC9EA03.ips",
+      "size": 41,
+      "sha256": "7f9580e5d8e01e19639429307014784249f1e04e241a0657c89ca580519c422f",
+      "asset": "7f9580e5d8e01e19639429307014784249f1e04e241a0657c89ca580519c422f.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "BE9001211DCC7C46833726B1A5EE343E7CDFE3CD000000000000000000000000",
+      "dest": "exefs_patches/disable_ca_verification/BE9001211DCC7C46833726B1A5EE343E7CDFE3CD000000000000000000000000.ips",
+      "size": 32,
+      "sha256": "c1fb5a5515c39a9ebec8f4f7c91c49d6bc7890f4cf832f04d56b120cfe0a8353",
+      "asset": "c1fb5a5515c39a9ebec8f4f7c91c49d6bc7890f4cf832f04d56b120cfe0a8353.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "CCE1AF6F242C7638C829ADA19B10E83FF4215DC4",
+      "dest": "exefs_patches/disable_ca_verification/CCE1AF6F242C7638C829ADA19B10E83FF4215DC4.ips",
+      "size": 32,
+      "sha256": "17c49773b4b892ccb2158f34e71567b6a56f28ec6b4366556fd3840510b52863",
+      "asset": "17c49773b4b892ccb2158f34e71567b6a56f28ec6b4366556fd3840510b52863.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "CEC9F20754ED3B1EFA21CCB474CA211A54C6F6D4000000000000000000000000",
+      "dest": "exefs_patches/disable_ca_verification/CEC9F20754ED3B1EFA21CCB474CA211A54C6F6D4000000000000000000000000.ips",
+      "size": 39,
+      "sha256": "7c6b5ab31f353dac71c0b7093e03b75599c7ce28e53fba25f8412ff6afef346b",
+      "asset": "7c6b5ab31f353dac71c0b7093e03b75599c7ce28e53fba25f8412ff6afef346b.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "D4FF6C2AB6E573B664965E7DC742B2071566D5B0000000000000000000000000",
+      "dest": "exefs_patches/disable_ca_verification/D4FF6C2AB6E573B664965E7DC742B2071566D5B0000000000000000000000000.ips",
+      "size": 49,
+      "sha256": "491abb5b3e619f31495a269084259486050f95a1a9d8ad122e749c7faf29e2dc",
+      "asset": "491abb5b3e619f31495a269084259486050f95a1a9d8ad122e749c7faf29e2dc.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "ED80DD3D929C05AADD861B467A705B9D3EBFF4FF",
+      "dest": "exefs_patches/disable_ca_verification/ED80DD3D929C05AADD861B467A705B9D3EBFF4FF.ips",
+      "size": 41,
+      "sha256": "a39399dddb6a28a0b68c0f35ff271fc31d54e31b2e116748d34264df361af07a",
+      "asset": "a39399dddb6a28a0b68c0f35ff271fc31d54e31b2e116748d34264df361af07a.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "F19352C1E0D9E8EA14F44D7780C0737D7FD6818B",
+      "dest": "exefs_patches/disable_ca_verification/F19352C1E0D9E8EA14F44D7780C0737D7FD6818B.ips",
+      "size": 26,
+      "sha256": "fbbd45dcc6da9b38f8f1b7e8b731fc2ca89c6db2d2169065be87a422ef079c3e",
+      "asset": "fbbd45dcc6da9b38f8f1b7e8b731fc2ca89c6db2d2169065be87a422ef079c3e.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_ca_verification",
+      "kind": "system",
+      "build_id": "FCB88190D47EE73F15E4FB20A58D5346C8B910F6",
+      "dest": "exefs_patches/disable_ca_verification/FCB88190D47EE73F15E4FB20A58D5346C8B910F6.ips",
+      "size": 41,
+      "sha256": "4c665284e311abd0231b3c41ea9c00b1326c6900c6fd764bc4371fbbb267cdd4",
+      "asset": "4c665284e311abd0231b3c41ea9c00b1326c6900c6fd764bc4371fbbb267cdd4.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "09AC439D5EA40E6CE1A6865D09A333E1",
+      "dest": "nro_patches/disable_browser_ca_verification/09AC439D5EA40E6CE1A6865D09A333E1.ips",
+      "size": 26,
+      "sha256": "f8058f2f839739ed5f4d274ca6c890c94e62c10d3b0fc6a62fc0882daf486251",
+      "asset": "f8058f2f839739ed5f4d274ca6c890c94e62c10d3b0fc6a62fc0882daf486251.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "0EAD6D768D4A11E90B37D43E57DF304F",
+      "dest": "nro_patches/disable_browser_ca_verification/0EAD6D768D4A11E90B37D43E57DF304F.ips",
+      "size": 19,
+      "sha256": "061b9b5ccde75e6ed0ceacb6b1aec32a39814d1386709e3f046070c422900cc3",
+      "asset": "061b9b5ccde75e6ed0ceacb6b1aec32a39814d1386709e3f046070c422900cc3.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "113D7308464FC91C003CFB18F94D29F4",
+      "dest": "nro_patches/disable_browser_ca_verification/113D7308464FC91C003CFB18F94D29F4.ips",
+      "size": 26,
+      "sha256": "57b1e06e76d0ad8606ea22d52d19e7ba271991dea46eeec97b1f49ad350d64c3",
+      "asset": "57b1e06e76d0ad8606ea22d52d19e7ba271991dea46eeec97b1f49ad350d64c3.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "33A10D84099BA0ED65C34CC6B8D89E51",
+      "dest": "nro_patches/disable_browser_ca_verification/33A10D84099BA0ED65C34CC6B8D89E51.ips",
+      "size": 26,
+      "sha256": "4808ef24db1e15c25773bc0740c0fc908b18698c88b62023f340f8ece01d15c0",
+      "asset": "4808ef24db1e15c25773bc0740c0fc908b18698c88b62023f340f8ece01d15c0.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "42172D83520F5BF148EF37918F5C10FE",
+      "dest": "nro_patches/disable_browser_ca_verification/42172D83520F5BF148EF37918F5C10FE.ips",
+      "size": 23,
+      "sha256": "f4bc936dc548762290796d333aefaae191f28a3790f35404acb1e6d058bbe55f",
+      "asset": "f4bc936dc548762290796d333aefaae191f28a3790f35404acb1e6d058bbe55f.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "439C3D3CE513FEBB4961B5EE605A3A9C",
+      "dest": "nro_patches/disable_browser_ca_verification/439C3D3CE513FEBB4961B5EE605A3A9C.ips",
+      "size": 21,
+      "sha256": "1c223d67060bc8697f6c25727965a27555a0bc37ff9480e1c747e9e8314c37ac",
+      "asset": "1c223d67060bc8697f6c25727965a27555a0bc37ff9480e1c747e9e8314c37ac.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "49C5C9021F3FABD2F5535385666AB7DC",
+      "dest": "nro_patches/disable_browser_ca_verification/49C5C9021F3FABD2F5535385666AB7DC.ips",
+      "size": 25,
+      "sha256": "11361f040c00b0f44eecabfea16b3fcf63393933a5ed1665e5d5d00c5e2e4990",
+      "asset": "11361f040c00b0f44eecabfea16b3fcf63393933a5ed1665e5d5d00c5e2e4990.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "5C9D10FEEC39A84B1E4BD101E7D62418",
+      "dest": "nro_patches/disable_browser_ca_verification/5C9D10FEEC39A84B1E4BD101E7D62418.ips",
+      "size": 21,
+      "sha256": "1c223d67060bc8697f6c25727965a27555a0bc37ff9480e1c747e9e8314c37ac",
+      "asset": "1c223d67060bc8697f6c25727965a27555a0bc37ff9480e1c747e9e8314c37ac.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "7BB88FB3C9F58F575A02B043D9F1123B",
+      "dest": "nro_patches/disable_browser_ca_verification/7BB88FB3C9F58F575A02B043D9F1123B.ips",
+      "size": 24,
+      "sha256": "7976ca0e4f4e31ab73aa065272da07f2986acd0bc647b20d36ecf93506bb3b5a",
+      "asset": "7976ca0e4f4e31ab73aa065272da07f2986acd0bc647b20d36ecf93506bb3b5a.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "8F055F081D00D5DB95005B8922C68BC4",
+      "dest": "nro_patches/disable_browser_ca_verification/8F055F081D00D5DB95005B8922C68BC4.ips",
+      "size": 25,
+      "sha256": "33fe344e3b7ada7210ea4b4cb8664efa84e2005f0166350ec1dd3110bf64555d",
+      "asset": "33fe344e3b7ada7210ea4b4cb8664efa84e2005f0166350ec1dd3110bf64555d.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "9069ED81FA5CE2493F1DBF934D9791D4",
+      "dest": "nro_patches/disable_browser_ca_verification/9069ED81FA5CE2493F1DBF934D9791D4.ips",
+      "size": 19,
+      "sha256": "fb10d9342605885be5a07f4280e1cf95de0a2b9e83b96d4d10f845bcee8cd5a0",
+      "asset": "fb10d9342605885be5a07f4280e1cf95de0a2b9e83b96d4d10f845bcee8cd5a0.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "91B9F694DB823EEF25F68E8F1D7C7153",
+      "dest": "nro_patches/disable_browser_ca_verification/91B9F694DB823EEF25F68E8F1D7C7153.ips",
+      "size": 26,
+      "sha256": "4d115bbf32bfe7931a203210daf87c9091bfd002538e7de1cbf42a6404841387",
+      "asset": "4d115bbf32bfe7931a203210daf87c9091bfd002538e7de1cbf42a6404841387.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "9438504C378C0CEFA0337113AB93DA17",
+      "dest": "nro_patches/disable_browser_ca_verification/9438504C378C0CEFA0337113AB93DA17.ips",
+      "size": 19,
+      "sha256": "333b93d3e3c6dbb531ca8e81822471e0e212123e4e843fa52dcb8189d6bf1776",
+      "asset": "333b93d3e3c6dbb531ca8e81822471e0e212123e4e843fa52dcb8189d6bf1776.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "962FE7DBBBED452491547D683C433ED2",
+      "dest": "nro_patches/disable_browser_ca_verification/962FE7DBBBED452491547D683C433ED2.ips",
+      "size": 26,
+      "sha256": "9a6a2b5b852c49f35dbd82aaa8e7ec1478d3c8342e6f46036c6c7bdb80f814d3",
+      "asset": "9a6a2b5b852c49f35dbd82aaa8e7ec1478d3c8342e6f46036c6c7bdb80f814d3.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "AD7BEC6E351ADE15A4FAD11689E32510",
+      "dest": "nro_patches/disable_browser_ca_verification/AD7BEC6E351ADE15A4FAD11689E32510.ips",
+      "size": 25,
+      "sha256": "2f67737ce1356a33fe434e31e6d1d43e39902ef5e7c2a100a2f3cd64ef5c608c",
+      "asset": "2f67737ce1356a33fe434e31e6d1d43e39902ef5e7c2a100a2f3cd64ef5c608c.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "BABD0C9F404550DEC6D8985BA7F1202B",
+      "dest": "nro_patches/disable_browser_ca_verification/BABD0C9F404550DEC6D8985BA7F1202B.ips",
+      "size": 26,
+      "sha256": "4d115bbf32bfe7931a203210daf87c9091bfd002538e7de1cbf42a6404841387",
+      "asset": "4d115bbf32bfe7931a203210daf87c9091bfd002538e7de1cbf42a6404841387.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "BB3BE3C28AB17E6BB814AE68909D5EA3",
+      "dest": "nro_patches/disable_browser_ca_verification/BB3BE3C28AB17E6BB814AE68909D5EA3.ips",
+      "size": 21,
+      "sha256": "52b58c75c72ac2ff9f1ac4dd69ad198641754db4f8a751f9aa26dec743d22338",
+      "asset": "52b58c75c72ac2ff9f1ac4dd69ad198641754db4f8a751f9aa26dec743d22338.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "BC338171E72636A2D77418E02F45E75D",
+      "dest": "nro_patches/disable_browser_ca_verification/BC338171E72636A2D77418E02F45E75D.ips",
+      "size": 49,
+      "sha256": "866b09921cfa51fa1716de6ae24982e969bcf265dd480979ae1f8e6093c04c8d",
+      "asset": "866b09921cfa51fa1716de6ae24982e969bcf265dd480979ae1f8e6093c04c8d.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "C338171E72636A2D77418E02F45E75D9F3090B",
+      "dest": "nro_patches/disable_browser_ca_verification/C338171E72636A2D77418E02F45E75D9F3090B.ips",
+      "size": 29,
+      "sha256": "3113d319ddaa40d375e6304eafcacd0cddf80258c0f4108c5abf60d63628a96e",
+      "asset": "3113d319ddaa40d375e6304eafcacd0cddf80258c0f4108c5abf60d63628a96e.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "C99C3A19E893EE6F2264B17E6824C2B8",
+      "dest": "nro_patches/disable_browser_ca_verification/C99C3A19E893EE6F2264B17E6824C2B8.ips",
+      "size": 26,
+      "sha256": "fa62b5e6db68c40f8dd26da4f46fbe289bdcd647464da5ff8caa9267bf53ddef",
+      "asset": "fa62b5e6db68c40f8dd26da4f46fbe289bdcd647464da5ff8caa9267bf53ddef.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "D5CDD979EC1E01071062CD87CCEB8F20",
+      "dest": "nro_patches/disable_browser_ca_verification/D5CDD979EC1E01071062CD87CCEB8F20.ips",
+      "size": 21,
+      "sha256": "52b58c75c72ac2ff9f1ac4dd69ad198641754db4f8a751f9aa26dec743d22338",
+      "asset": "52b58c75c72ac2ff9f1ac4dd69ad198641754db4f8a751f9aa26dec743d22338.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "DC3F7C8B0209AAB0CED63CC67A180C76",
+      "dest": "nro_patches/disable_browser_ca_verification/DC3F7C8B0209AAB0CED63CC67A180C76.ips",
+      "size": 24,
+      "sha256": "05047031f4da8924de99b20afa9b4e30549deacf6c2f0c1a4ffea544d5229c64",
+      "asset": "05047031f4da8924de99b20afa9b4e30549deacf6c2f0c1a4ffea544d5229c64.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "E473F7D6298D8883E94A9AFE4F7D3A40",
+      "dest": "nro_patches/disable_browser_ca_verification/E473F7D6298D8883E94A9AFE4F7D3A40.ips",
+      "size": 49,
+      "sha256": "d17967afb548f6443ebdd1344f2d152a4a2c95f0b70cb0777df178726d6f7bc0",
+      "asset": "d17967afb548f6443ebdd1344f2d152a4a2c95f0b70cb0777df178726d6f7bc0.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "E561A756E05BDD08A9F69684D81E4EAF",
+      "dest": "nro_patches/disable_browser_ca_verification/E561A756E05BDD08A9F69684D81E4EAF.ips",
+      "size": 24,
+      "sha256": "a9db6c6a39ad13a2dc477267e7f1025668b12a0a74d0556147902997196d2778",
+      "asset": "a9db6c6a39ad13a2dc477267e7f1025668b12a0a74d0556147902997196d2778.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "EF57F25CB9C2F0A9B3E5D9DD6958C9AB",
+      "dest": "nro_patches/disable_browser_ca_verification/EF57F25CB9C2F0A9B3E5D9DD6958C9AB.ips",
+      "size": 23,
+      "sha256": "e93af71a09b1a44bede0da8cd5af92ee2c5c0ed63f08e174e040324fd028f1fa",
+      "asset": "e93af71a09b1a44bede0da8cd5af92ee2c5c0ed63f08e174e040324fd028f1fa.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "FA7EA8512C4FF7059F5D4101268FA4C0",
+      "dest": "nro_patches/disable_browser_ca_verification/FA7EA8512C4FF7059F5D4101268FA4C0.ips",
+      "size": 23,
+      "sha256": "1b43a4f79719fb6c89932e9b3bff46713f99c0fb529c0bdcf4a3d606b40e82fa",
+      "asset": "1b43a4f79719fb6c89932e9b3bff46713f99c0fb529c0bdcf4a3d606b40e82fa.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "FB7DD6BF69A43C98F80DB368C0C9D43D",
+      "dest": "nro_patches/disable_browser_ca_verification/FB7DD6BF69A43C98F80DB368C0C9D43D.ips",
+      "size": 24,
+      "sha256": "348d2f55799a6ec23ce435d227e0964be0f5ff61b0848912d3bbdd08105b5007",
+      "asset": "348d2f55799a6ec23ce435d227e0964be0f5ff61b0848912d3bbdd08105b5007.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "FED959FD18EAD21B0339B52520B60726",
+      "dest": "nro_patches/disable_browser_ca_verification/FED959FD18EAD21B0339B52520B60726.ips",
+      "size": 30,
+      "sha256": "e84b2070a19ca9834c18ce1c657a3f321ad4bb24d6776462592fc98fd1adcb09",
+      "asset": "e84b2070a19ca9834c18ce1c657a3f321ad4bb24d6776462592fc98fd1adcb09.ips",
+      "targets": [
+        "console"
+      ]
+    },
+    {
+      "name": "disable_browser_ca_verification",
+      "kind": "system",
+      "build_id": "FFCE2D36ADFBFB100AA2170EBB9648A2",
+      "dest": "nro_patches/disable_browser_ca_verification/FFCE2D36ADFBFB100AA2170EBB9648A2.ips",
+      "size": 24,
+      "sha256": "857eaaba99df6fedda5f84d2ca6698a48f8ce1927fa33bdf5766cc7cc7df60ee",
+      "asset": "857eaaba99df6fedda5f84d2ca6698a48f8ce1927fa33bdf5766cc7cc7df60ee.ips",
+      "targets": [
+        "console"
+      ]
+    }
+  ]
+}
