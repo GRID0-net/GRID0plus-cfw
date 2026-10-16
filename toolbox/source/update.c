@@ -16,7 +16,7 @@
 #include "minizip/unzip.h"
 
 #define RELEASES_HOST "api.github.com"
-#define RELEASES_PATH "/repos/GRID0-net/GRID0plus-cfw/releases?per_page=5"
+#define RELEASES_PATH "/repos/GRID0-net/GRID0plus-cfw/releases?per_page=30"
 #define SYS_RELEASE_PATH "sdmc:/GRID0plus/sys-grid0-installed-release.txt"
 #define UPDATE_ZIP_TMP "sdmc:/switch/grid0plus-update.zip"
 

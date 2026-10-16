@@ -56,3 +56,12 @@ gh release create "$TAG" -R "$REPO" --target "$(git rev-parse HEAD)" --latest=fa
     --title "Patches ${SERIAL}" \
     --notes "IPS patches, serial ${SERIAL}. Installed by the GRID0+ Toolbox and the GRID0+ emulators; see patches/README.md." \
     "$STAGE"/*
+
+# Toolboxes up to 0.8.x read only the five newest releases to find their own
+# update; patches releases piling up would hide it. Keep the two newest.
+gh release list -R "$REPO" -L 100 --json tagName -q '.[].tagName' |
+    grep '^patches-' | sort -t- -k2 -n -r | tail -n +3 |
+    while read -r old; do
+        echo "Deleting superseded $old"
+        gh release delete "$old" -R "$REPO" --yes --cleanup-tag
+    done
