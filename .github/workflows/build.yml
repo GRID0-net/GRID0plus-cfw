@@ -185,9 +185,10 @@ jobs:
         run: |
           mkdir -p previous
           # Latest is reserved for older Toolbox updaters. Reuse the newest
-          # published bundle, including sysmodule-only releases.
-          PREVIOUS_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=5" \
-            --jq '[.[] | select(.draft == false and .prerelease == false)][0].tag_name')
+          # published bundle, including sysmodule-only releases. Only v* tags:
+          # patches-<serial> releases share the list and carry no bundle.
+          PREVIOUS_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=30" \
+            --jq '[.[] | select(.draft == false and .prerelease == false and (.tag_name | startswith("v")))][0].tag_name')
           gh release download "${PREVIOUS_TAG}" -R "${{ github.repository }}" -D previous \
             -p 'GRID0-cfw-*.zip' -p 'grid0plus-toolbox.nro'
           ls -l previous
