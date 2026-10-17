@@ -1,5 +1,5 @@
 {
-  "serial": 1,
+  "serial": 2,
   "patches": [
     {
       "name": "s3certpin_bypass",
@@ -119,8 +119,8 @@
       "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75",
       "dest": "exefs_patches/s3smallmatch_bypass/28C4287AEE36F7499DA60F3E68B54C70DA382D75.ips",
       "size": 1035,
-      "sha256": "80c0c81cabf0109dc1a0253518d252431a4e55873d7960dc2c0b2d803f305be2",
-      "asset": "80c0c81cabf0109dc1a0253518d252431a4e55873d7960dc2c0b2d803f305be2.ips",
+      "sha256": "5134020e70b7886c82184cc8dcecdbc28452508339f642f71e07b7d91a5c7996",
+      "asset": "5134020e70b7886c82184cc8dcecdbc28452508339f642f71e07b7d91a5c7996.ips",
       "targets": [
         "console",
         "emulator"
@@ -133,8 +133,8 @@
       "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75000000000000000000000000",
       "dest": "exefs_patches/s3smallmatch_bypass/28C4287AEE36F7499DA60F3E68B54C70DA382D75000000000000000000000000.ips",
       "size": 1035,
-      "sha256": "80c0c81cabf0109dc1a0253518d252431a4e55873d7960dc2c0b2d803f305be2",
-      "asset": "80c0c81cabf0109dc1a0253518d252431a4e55873d7960dc2c0b2d803f305be2.ips",
+      "sha256": "5134020e70b7886c82184cc8dcecdbc28452508339f642f71e07b7d91a5c7996",
+      "asset": "5134020e70b7886c82184cc8dcecdbc28452508339f642f71e07b7d91a5c7996.ips",
       "targets": [
         "console",
         "emulator"

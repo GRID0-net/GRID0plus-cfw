@@ -27,30 +27,39 @@ def instruction(word):
     return word.to_bytes(4, "little").hex()
 
 
-def branch(at, target, condition=None, register=None):
+def branch(at, target, condition=None, register=None, zero=False):
     displacement = (target - at) // 4
     if register is not None:
         assert -(1 << 18) <= displacement < (1 << 18)
-        return 0x35000000 | ((displacement & 0x7ffff) << 5) | register
+        return (0x34000000 if zero else 0x35000000) | ((displacement & 0x7ffff) << 5) | register
     if condition is not None:
         assert -(1 << 18) <= displacement < (1 << 18)
         return 0x54000000 | ((displacement & 0x7ffff) << 5) | condition
     assert -(1 << 25) <= displacement < (1 << 25)
     return 0x14000000 | (displacement & 0x3ffffff)
-
-
 # Compiler alignment after terminal instructions; all four spans are UDF,
 # have no direct branch or pointer references in this build, and precede
 # aligned function entries. No executable is redistributed by this tool.
-# The hook replaces the existing b.lt after cmp w8,#1. Loads/CBNZ/B preserve
-# NZCV, so the final trampoline retains that comparison and both destinations.
-# x8 is dead at all three destinations; w16 is scratch at this entry.
+# The hook replaces the existing b.lt after cmp w8,#1. Loads/CBZ/CBNZ/B
+# preserve NZCV, so the final trampoline retains that comparison and both
+# destinations. x8 is dead at all three destinations; w16 is scratch here.
+#
+# The lobby waits while EITHER live Gamesync session has backfill open:
+# primary ebf (+41), or secondary ebf (+73) when the secondary is active
+# (+64). 0.8.2 read only the secondary whenever one was active. A Salmon Run
+# crew from a friends room holds two sessions, the room and the job, and the
+# room's ebf is never opened (grid0, 2026-10-17: it writes cp true, ebf
+# false after every job). So the gate read the room, passed, and the host
+# locked the reopened job 2.03 s -- the 120-update stability count -- after
+# its last Again! write, in all three of that evening's rematches, while
+# every rematch without a room waited for GRID0's lock.
 A, B, C, D = 0x3892594, 0x3892914, 0x389B4A4, 0x38A2804
+WAIT = 0x389FB2C
 REMATCH_BLOCKS = {
-    A: [0xf9400308, 0x39410110, branch(A+8, B)], # [x24] manager, secondary active
-    B: [branch(B, D, register=16), 0x3940a508, branch(B+8, C)], # primary ebf +41
-    D: [0x39412508, branch(D+4, C), 0xd503201f], # secondary ebf +73
-    C: [branch(C, 0x389FB2C, register=8), branch(C+4, 0x389F798, condition=11), branch(C+8, 0x389F658)],
+    A: [0xf9400308, 0x3940a510, branch(A+8, B)],  # [x24] manager, primary ebf +41
+    B: [branch(B, WAIT, register=16), 0x39410110, branch(B+8, D)],  # open: wait; secondary active +64
+    D: [branch(D, C+4, register=16, zero=True), 0x39412508, branch(D+8, C)],  # inactive: original branch; secondary ebf +73
+    C: [branch(C, WAIT, register=8), branch(C+4, 0x389F798, condition=11), branch(C+8, 0x389F658)],
 }
 # Tricolor's first step (fest_match_tricolor_team_config, match kind 8) gathers
 # a pair of one fest team and waits for exactly two players, first in the

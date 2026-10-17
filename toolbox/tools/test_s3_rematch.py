@@ -18,8 +18,8 @@ def stop(uc,pc,size,user):
 u.hook_add(UC_HOOK_CODE,stop)
 for secondary,primaryOpen,secondaryOpen,negative in itertools.product((0,1),repeat=4):
  u.mem_write(manager+64,bytes([secondary]));u.mem_write(manager+41,bytes([primaryOpen]));u.mem_write(manager+73,bytes([secondaryOpen]));flags=0x80000000 if negative else 0;u.reg_write(UC_ARM64_REG_NZCV,flags);hit.clear();u.emu_start(B+0x389f654,B+0x389fb30,count=30)
- opened=secondaryOpen if secondary else primaryOpen
+ opened=primaryOpen or (secondary and secondaryOpen)
  expected=B+(0x389fb2c if opened else 0x389f798 if negative else 0x389f658)
  assert hit==[expected],(secondary,primaryOpen,secondaryOpen,negative,hit,hex(expected))
  assert u.reg_read(UC_ARM64_REG_NZCV)==flags
-print('16 ARM64 execution cases passed: active-session selection, open/closed gate, original LT branch and NZCV preserved')
+print('16 ARM64 execution cases passed: either live session with backfill open holds the lobby, original LT branch and NZCV preserved')

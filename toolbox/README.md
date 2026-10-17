@@ -129,8 +129,14 @@ it cannot.
   While backfill is open it stays in the lobby; GRID0 closes it after the
   grace window. The original conditional branch, NZCV, count stability and
   readiness checks remain intact. Four verified alignment spans hold the
-  trampoline, without changing fresh/private lobby minimums. The new
-  server-lock gate still needs a hardware test.
+  trampoline, without changing fresh/private lobby minimums. Its
+  session choice was wrong for a crew from a friends room: such a crew holds
+  two sessions, the room and the job, and 0.8.2 read only the secondary
+  whenever one was active. The room never opens `ebf`, so on 2026-10-17 the
+  host locked every reopened job itself 2.03 s (the 120-update stability
+  count) after pressing Again!, with no time for anyone to join; rematches
+  without a room waited for GRID0 as intended. The gate now waits while
+  either live session has `ebf` open. Hardware test pending.
   Version 0.8.5 lets Tricolor start with one player per team. Its first step
   (`fest_match_tricolor_team_config`) gathers a pair of one fest team and
   waits for exactly two players, in the lobby wait (`0x71038AAC84`) and again
