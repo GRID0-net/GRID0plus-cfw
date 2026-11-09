@@ -28,8 +28,6 @@
 #define PATCHES_ZIP_TMP    GRID0PLUS_DIR "/patches.zip.tmp"
 #define PATCHES_JSON_TMP   GRID0PLUS_DIR "/patches-manifest.tmp"
 
-#define GITHUB_HOST      "github.com"
-#define GITHUB_DOWNLOAD  "/GRID0-net/GRID0plus-cfw/releases/download/"
 // The mirror serves the same two files from GRID0+'s Toolbox API port.
 #define MIRROR_PATH      "/grid0plus/patches/"
 
@@ -65,7 +63,9 @@ static PatchEntry s_patches[MAX_PATCHES];
 static int s_patchCount;
 static InstalledEntry s_installed[MAX_PATCHES];
 static int s_installedCount;
-static bool s_fromMirror;
+typedef enum { SOURCE_GITHUB, SOURCE_FORGE, SOURCE_MIRROR, SOURCE_COUNT } PatchSource;
+static PatchSource s_source;
+static const char *const s_sourceNames[] = { "GitHub", "git.doughston.dev", "GRID0+ server" };
 static char s_tag[64];
 
 // --- manifest ---------------------------------------------------------------
@@ -262,11 +262,9 @@ static unsigned char *download(const char *host, int port, const char *path, con
 }
 
 // The newest published patches release, from the release list update_check()
-// already read: Toolbox releases sit in the same list. Without that list
-// (GitHub unreachable a moment ago) GitHub is not tried again, so a network
-// that drops packets costs one timeout before the mirror, not two.
-static bool findGithubTag(int *status) {
-    const char *json = update_release_list(status);
+// already read, or load the fallback list on demand.
+static bool findReleaseTag(PatchSource source, int *status) {
+    const char *json = update_release_list(source == SOURCE_FORGE, status);
     if (!json) { if (*status == 0) *status = NET_ERR_UNKNOWN; return false; }
     const char *r = jsonSpace(json);
     if (*r == '[') {
@@ -289,15 +287,15 @@ static bool findGithubTag(int *status) {
     return false;
 }
 
-static unsigned char *fetchFile(bool mirror, const char *name, const char *tmp, long max, long *len,
+static unsigned char *fetchFile(PatchSource source, const char *name, const char *tmp, long max, long *len,
                                 int *status, Grid0plusPatchProgressFn onProgress) {
     char path[256];
-    if (mirror) {
+    if (source == SOURCE_MIRROR) {
         snprintf(path, sizeof(path), MIRROR_PATH "%s", name);
         return download(g_server_ip, GRID0PLUS_TOOLBOX_PORT, path, tmp, max, len, status, onProgress);
     }
-    snprintf(path, sizeof(path), GITHUB_DOWNLOAD "%s/%s", s_tag, name);
-    return download(GITHUB_HOST, 443, path, tmp, max, len, status, onProgress);
+    snprintf(path, sizeof(path), GRID0_RELEASE_DOWNLOAD "%s/%s", s_tag, name);
+    return download(source == SOURCE_FORGE ? GRID0_FORGE_HOST : GRID0_GITHUB_HOST, 443, path, tmp, max, len, status, onProgress);
 }
 
 Grid0plusPatchStatus patches_check(void) {
@@ -305,27 +303,28 @@ Grid0plusPatchStatus patches_check(void) {
     s_patchCount = 0;
     if (!net_ready()) { st.error = NET_ERR_NOT_READY; return st; }
 
-    for (int source = 0; source < 2; source++) {
-        bool mirror = source == 1;
+    for (PatchSource source = SOURCE_GITHUB; source < SOURCE_COUNT; source++) {
         int status = 0;
-        if (!mirror && !findGithubTag(&status)) { st.error = status; continue; }
+        if (source != SOURCE_MIRROR && !findReleaseTag(source, &status)) { st.error = status; continue; }
         long len = 0;
-        unsigned char *body = fetchFile(mirror, "manifest.json", PATCHES_JSON_TMP, 1 << 20, &len, &status, NULL);
+        unsigned char *body = fetchFile(source, "manifest.json", PATCHES_JSON_TMP, 1 << 20, &len, &status, NULL);
         if (!body) { st.error = status ? status : NET_ERR_UNKNOWN; continue; }
         body[len] = '\0';
         int serial = 0;
         bool ok = parseManifest((const char *)body, &serial);
         free(body);
         if (!ok) { st.error = NET_ERR_PROTO; continue; }
-        s_fromMirror = mirror;
+        s_source = source;
         st.error = 0;
         st.serial = serial;
-        st.source = mirror ? "GRID0+ server" : "GitHub";
+        st.source = s_sourceNames[source];
         compare(&st);
         // Files already on the card from a Toolbox that bundled them match
         // the manifest; record them so Switch to Default removes them too.
         if (st.game_changes + st.system_changes == 0) saveInstalled();
-        grid0plus_trace(mirror ? "patches: manifest from the GRID0+ server" : "patches: manifest from GitHub");
+        char message[96];
+        snprintf(message, sizeof(message), "patches: manifest from %s", st.source);
+        grid0plus_trace(message);
         return st;
     }
     grid0plus_trace("patches: no manifest from any source");
@@ -366,19 +365,34 @@ bool patches_apply(Grid0plusPatchProgressFn onProgress) {
     if (anyNeeded) {
         int status = 0;
         if (!grid0plus_ensure_dir(GRID0PLUS_DIR)) return false;
-        FILE *f = fopen(PATCHES_ZIP_TMP, "wb");
-        if (!f) return false;
-        char path[256];
-        long n;
-        if (s_fromMirror) {
-            snprintf(path, sizeof(path), MIRROR_PATH "patches.zip");
-            n = net_https_get_to_file(g_server_ip, GRID0PLUS_TOOLBOX_PORT, path, f, &status, onProgress);
-        } else {
-            snprintf(path, sizeof(path), GITHUB_DOWNLOAD "%s/patches.zip", s_tag);
-            n = net_https_get_to_file(GITHUB_HOST, 443, path, f, &status, onProgress);
+        bool downloaded = false;
+        const int attempts = s_source == SOURCE_MIRROR ? 1 : 2;
+        for (int attempt = 0; attempt < attempts && !downloaded; attempt++) {
+            PatchSource source = attempt == 0 ? s_source :
+                (s_source == SOURCE_GITHUB ? SOURCE_FORGE : SOURCE_GITHUB);
+            FILE *f = fopen(PATCHES_ZIP_TMP, "wb");
+            if (!f) return false;
+            char path[256];
+            const char *host;
+            int port = 443;
+            if (source == SOURCE_MIRROR) {
+                snprintf(path, sizeof(path), MIRROR_PATH "patches.zip");
+                host = g_server_ip;
+                port = GRID0PLUS_TOOLBOX_PORT;
+            } else {
+                snprintf(path, sizeof(path), GRID0_RELEASE_DOWNLOAD "%s/patches.zip", s_tag);
+                host = source == SOURCE_FORGE ? GRID0_FORGE_HOST : GRID0_GITHUB_HOST;
+            }
+            long n = net_https_get_to_file(host, port, path, f, &status, onProgress);
+            fclose(f);
+            if (n == -2) break;
+            downloaded = n >= 0 && status == 200;
         }
-        fclose(f);
-        if (n < 0 || status != 200) { remove(PATCHES_ZIP_TMP); grid0plus_trace("patches: download failed"); return false; }
+        if (!downloaded) {
+            remove(PATCHES_ZIP_TMP);
+            grid0plus_trace("patches: download failed");
+            return false;
+        }
 
         unzFile uf = unzOpen(PATCHES_ZIP_TMP);
         if (!uf) { remove(PATCHES_ZIP_TMP); return false; }

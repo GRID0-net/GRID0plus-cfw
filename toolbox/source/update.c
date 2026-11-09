@@ -29,14 +29,38 @@ static long s_downloadSize = 0;
 static char s_releaseTag[64] = {0};
 static int s_availableTargets = 0;
 
-// The release list from the last update_check(), kept for patches.c so a
-// launch costs one unauthenticated GitHub API call, not two.
-static char *s_releasesJson = NULL;
-static int s_releasesError = 0;
+// Cache each result for the launch so patch checks reuse the API response.
+static struct {
+    char *json;
+    int error;
+    bool checked;
+} s_releaseLists[2];
 
-const char *update_release_list(int *error) {
-    *error = s_releasesError;
-    return s_releasesJson;
+const char *update_release_list(bool forge, int *error) {
+    if (!s_releaseLists[forge].checked) {
+        s_releaseLists[forge].checked = true;
+        size_t len = 0;
+        int status = NET_ERR_NOT_READY;
+        unsigned char *body = net_ready() ? net_https_get(
+            forge ? GRID0_FORGE_HOST : RELEASES_HOST, 443,
+            forge ? "/api/v1/repos/GRID0-net/GRID0plus-cfw/releases?limit=30" : RELEASES_PATH,
+            &len, &status) : NULL;
+        if (body && status == 200) {
+            char *json = malloc(len + 1);
+            if (json) {
+                memcpy(json, body, len);
+                json[len] = '\0';
+                s_releaseLists[forge].json = json;
+            } else {
+                status = NET_ERR_OOM;
+            }
+        }
+        free(body);
+        s_releaseLists[forge].error = s_releaseLists[forge].json ? 0 :
+            (status ? status : NET_ERR_UNKNOWN);
+    }
+    *error = s_releaseLists[forge].error;
+    return s_releaseLists[forge].json;
 }
 
 static Grid0plusUpdateProgressFn s_progressCb = NULL;
@@ -108,7 +132,11 @@ static bool parseReleaseJson(const char *json, int *maj, int *min, int *patch,
     if (!jsonString(jsonField(json, "tag_name"), tag, sizeof(tag)) ||
         sscanf(tag, "v%d.%d.%d%n", maj, min, patch, &consumed) != 3 ||
         *maj < 0 || *min < 0 || *patch < 0) return false;
-    if (tag[consumed] && strncmp(tag + consumed, "-sys.", 5)) return false;
+    if (tag[consumed]) {
+        const char *suffix = tag + consumed;
+        if (strncmp(suffix, "-sys.", 5) || !suffix[5] ||
+            suffix[5 + strspn(suffix + 5, "0123456789")]) return false;
+    }
     char assetName[100]; snprintf(assetName, sizeof(assetName), "GRID0-cfw-%s.zip", tag);
     const char *asset = jsonField(json, "assets");
     if (!asset || *asset++ != '[') return false;
@@ -121,8 +149,15 @@ static bool parseReleaseJson(const char *json, int *maj, int *min, int *patch,
             if (!sp) return false;
             errno = 0; *size = strtol(sp, &se, 10);
             if (errno || se == sp || *size <= 4096 ||
-                !jsonString(jsonField(asset, "browser_download_url"), url, urlCap) ||
-                strncmp(url, "https://github.com/GRID0-net/GRID0plus-cfw/releases/download/", strlen("https://github.com/GRID0-net/GRID0plus-cfw/releases/download/"))) return false;
+                !jsonString(jsonField(asset, "browser_download_url"), url, urlCap)) return false;
+            char expected[512];
+            snprintf(expected, sizeof(expected), "https://" GRID0_GITHUB_HOST GRID0_RELEASE_DOWNLOAD "%s/%s",
+                     tag, assetName);
+            if (strcmp(url, expected)) {
+                snprintf(expected, sizeof(expected), "https://" GRID0_FORGE_HOST GRID0_RELEASE_DOWNLOAD "%s/%s",
+                         tag, assetName);
+                if (strcmp(url, expected)) return false;
+            }
             snprintf(s_releaseTag, sizeof(s_releaseTag), "%s", tag);
             return true;
         }
@@ -145,49 +180,34 @@ Grid0plusUpdate update_check(void) {
     s_downloadSize = 0;
     s_availableTargets = 0;
 
-    free(s_releasesJson);
-    s_releasesJson = NULL;
-    s_releasesError = NET_ERR_NOT_READY;
-    if (!net_ready()) { u.error = NET_ERR_NOT_READY; return u; }
-
-    size_t len = 0;
-    int status = 0;
-    unsigned char *body = NULL;
-    for (int attempt = 0; attempt < 2 && !body; attempt++) {
-        body = net_https_get(RELEASES_HOST, 443, RELEASES_PATH, &len, &status);
-        if (!body && attempt == 0) svcSleepThread(1000000000ULL);
+    for (int source = 0; source < 2; source++) {
+        free(s_releaseLists[source].json);
+        memset(&s_releaseLists[source], 0, sizeof(s_releaseLists[source]));
     }
-    if (!body || status != 200) {
-        u.error = status != 0 ? status : NET_ERR_UNKNOWN;
-        s_releasesError = u.error;
-        free(body);
-        return u;
-    }
-
-    char *json = (char *)malloc(len + 1);
-    if (!json) { free(body); u.error = NET_ERR_OOM; return u; }
-    memcpy(json, body, len);
-    json[len] = '\0';
-    free(body);
 
     int maj = 0, min = 0, patch = 0;
     long sz = 0;
     bool found = false;
-    const char *release = jsonSpace(json);
-    if (*release == '[') {
-        release++;
+    for (int source = 0; source < 2 && !found; source++) {
+        const char *json = update_release_list(source == 1, &u.error);
+        if (!json) continue;
+        u.error = NET_ERR_PROTO;
+        const char *release = jsonSpace(json);
+        if (*release++ != '[') continue;
         while (*(release = jsonSpace(release)) != ']') {
             const char *end = jsonEnd(release, 0);
             if (!end) break;
-            if (parseReleaseJson(release, &maj, &min, &patch, s_downloadUrl, sizeof(s_downloadUrl), &sz)) { found = true; break; }
+            if (parseReleaseJson(release, &maj, &min, &patch, s_downloadUrl, sizeof(s_downloadUrl), &sz)) {
+                found = true;
+                u.error = 0;
+                break;
+            }
             release = jsonSpace(end);
             if (*release == ',') release++;
             else if (*release != ']') break;
         }
     }
-    if (!found) {
-        u.error = NET_ERR_PROTO;
-    } else {
+    if (found) {
         u.maj = maj; u.min = min; u.patch = patch; u.size = sz;
         snprintf(u.tag, sizeof(u.tag), "%s", s_releaseTag);
         u.toolbox_available = semverCompare(maj, min, patch, GRID0PLUS_VERSION_MAJOR,
@@ -196,14 +216,15 @@ Grid0plusUpdate update_check(void) {
         FILE *marker = fopen(SYS_RELEASE_PATH, "r");
         if (marker) { (void)fgets(installed, sizeof(installed), marker); fclose(marker); }
         installed[strcspn(installed, "\r\n")] = '\0';
-        u.sysmodule_available = strcmp(installed, s_releaseTag) != 0;
+        int installedMaj, installedMin, installedPatch;
+        bool olderBundle = sscanf(installed, "v%d.%d.%d", &installedMaj, &installedMin, &installedPatch) == 3 &&
+            semverCompare(maj, min, patch, installedMaj, installedMin, installedPatch) < 0;
+        u.sysmodule_available = !olderBundle && strcmp(installed, s_releaseTag) != 0;
         u.available = u.toolbox_available || u.sysmodule_available;
         s_availableTargets = (u.toolbox_available ? GRID0PLUS_UPDATE_TOOLBOX : 0) |
                              (u.sysmodule_available ? GRID0PLUS_UPDATE_SYSMODULE : 0);
         s_downloadSize = sz;
     }
-    s_releasesJson = json;
-    s_releasesError = 0;
     return u;
 }
 
@@ -316,28 +337,21 @@ Grid0plusUpdateResult update_apply(long expectedSize, Grid0plusUpdateTarget targ
 
     if (!net_ready()) { fclose(f); remove(UPDATE_ZIP_TMP); return GRID0PLUS_UPDATE_NET_FAIL; }
 
-    char hostPort[256] = {0}, path[1024] = {0};
-    if (sscanf(s_downloadUrl, "https://%255[^/]%1023s", hostPort, path) < 2) {
-        fclose(f); remove(UPDATE_ZIP_TMP);
-        return GRID0PLUS_UPDATE_NET_FAIL;
-    }
-    char host[256] = {0};
-    int port = 443;
-    char *colon = strrchr(hostPort, ':');
-    if (colon) {
-        size_t hostLen = (size_t)(colon - hostPort);
-        if (hostLen >= sizeof(host)) hostLen = sizeof(host) - 1;
-        memcpy(host, hostPort, hostLen);
-        host[hostLen] = '\0';
-        port = atoi(colon + 1);
-        if (port <= 0) port = 443;
-    } else {
-        snprintf(host, sizeof(host), "%s", hostPort);
-    }
-
+    const bool fromForge = !strncmp(s_downloadUrl, "https://" GRID0_FORGE_HOST "/",
+                                    sizeof("https://" GRID0_FORGE_HOST "/") - 1);
+    const char *path = strchr(s_downloadUrl + sizeof("https://") - 1, '/');
     int status = 0;
-    long len = net_https_get_to_file(host, port, path, f, &status, onProgress ? progressRelay : NULL);
+    long len = net_https_get_to_file(fromForge ? GRID0_FORGE_HOST : GRID0_GITHUB_HOST,
+                                    443, path, f, &status, onProgress ? progressRelay : NULL);
     fclose(f);
+    if (len != -2 && (status != 200 || len != expected)) {
+        // Retry the same release asset, never install a different version mid-update.
+        f = fopen(UPDATE_ZIP_TMP, "wb");
+        if (!f) { remove(UPDATE_ZIP_TMP); return GRID0PLUS_UPDATE_WRITE_FAIL; }
+        len = net_https_get_to_file(fromForge ? GRID0_GITHUB_HOST : GRID0_FORGE_HOST,
+                                    443, path, f, &status, onProgress ? progressRelay : NULL);
+        fclose(f);
+    }
 
     if (len == -2) { remove(UPDATE_ZIP_TMP); return GRID0PLUS_UPDATE_WRITE_FAIL; }
     if (len < 0)   { remove(UPDATE_ZIP_TMP); return GRID0PLUS_UPDATE_NET_FAIL; }

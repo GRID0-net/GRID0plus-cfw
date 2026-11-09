@@ -45,11 +45,13 @@ typedef void (*Grid0plusUpdateProgressFn)(Grid0plusUpdatePhase phase, long done,
 // at startup, before any update check. Safe to call with NULL/empty.
 void update_set_self_path(const char *argv0);
 
-// The raw release list the last update_check() read, or NULL with *error
-// set to why it could not be read.
-const char *update_release_list(int *error);
+#define GRID0_GITHUB_HOST "github.com"
+#define GRID0_FORGE_HOST "git.doughston.dev"
+#define GRID0_RELEASE_DOWNLOAD "/GRID0-net/GRID0plus-cfw/releases/download/"
+// Cached release list for the selected host, or NULL with an error.
+const char *update_release_list(bool forge, int *error);
 
-// Queries GitHub for the latest release. Managed sockets/SSL internally.
+// Checks GitHub, then the project Git server if no usable release was found.
 Grid0plusUpdate update_check(void);
 
 // Downloads and installs the update found by the last update_check() call

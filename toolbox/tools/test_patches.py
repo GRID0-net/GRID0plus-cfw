@@ -57,9 +57,10 @@ void grid0plus_remove_dir_and_contents(const char *dir) {
 bool net_ready(void) { return true; }
 
 // update_check()'s release list, as the fake GitHub API would answer it.
-const char *update_release_list(int *error) {
+const char *update_release_list(bool forge, int *error) {
     static char buf[1 << 16]; char p[1024];
-    snprintf(p, sizeof p, "%s/api.github.com/repos/GRID0-net/GRID0plus-cfw/releases", getenv("FAKE"));
+    snprintf(p, sizeof p, "%s/%s/repos/GRID0-net/GRID0plus-cfw/releases", getenv("FAKE"),
+             forge ? "git.doughston.dev/api/v1" : "api.github.com");
     FILE *f = fopen(p, "rb");
     if (!f) { *error = getenv("DOWN") ? NET_ERR_CONNECT : 404; return NULL; }
     buf[fread(buf, 1, sizeof buf - 1, f)] = 0; fclose(f); *error = 0; return buf;
@@ -121,14 +122,16 @@ def publish(fake, entries, serial, where=('github', 'mirror'), corrupt=None):
         for name, data in files.items():
             z.writestr(name, data)
     for d in where:
-        if d == 'github':
+        if d in ('github', 'forge'):
             tag = f'patches-{serial}'
-            api = Path(fake) / 'api.github.com/repos/GRID0-net/GRID0plus-cfw/releases'
+            api_host = 'api.github.com' if d == 'github' else 'git.doughston.dev/api/v1'
+            host = 'github.com' if d == 'github' else 'git.doughston.dev'
+            api = Path(fake) / f'{api_host}/repos/GRID0-net/GRID0plus-cfw/releases'
             api.parent.mkdir(parents=True, exist_ok=True)
             api.write_text(json.dumps([
                 {'tag_name': 'v0.9.0', 'draft': False},
                 {'tag_name': tag, 'draft': False}]))
-            base = Path(fake) / f'github.com/GRID0-net/GRID0plus-cfw/releases/download/{tag}'
+            base = Path(fake) / f'{host}/GRID0-net/GRID0plus-cfw/releases/download/{tag}'
         else:
             base = Path(fake) / '10.0.0.1/grid0plus/patches'
         base.mkdir(parents=True, exist_ok=True)
@@ -181,10 +184,20 @@ def main():
         assert run('apply')[0] == 0
         assert not (sd / game_twin[1]).exists() and (sd / game[1]).read_bytes() == game2[2]
 
-        # GitHub down: the mirror answers.
+        # GitHub metadata and asset failures independently fall back to Forge.
+        shutil.rmtree(fake)
+        publish(fake, [game, system], 4, where=('forge',))
+        assert run('check') == (0, '0 4 1 0 git.doughston.dev'), run('check')
+        publish(fake, [game, system], 4, where=('github',))
+        (fake / 'github.com/GRID0-net/GRID0plus-cfw/releases/download/patches-4/patches.zip').unlink()
+        assert run('apply')[0] == 0
+        assert (sd / game[1]).read_bytes() == game[2]
+
+        # Both release hosts down: the API server mirror answers.
         shutil.rmtree(fake)
         publish(fake, [game2, system], 3, where=('mirror',))
-        assert run('check', DOWN='api.github.com') == (0, '0 3 0 0 GRID0+ server'), run('check', DOWN='api.github.com')
+        assert run('check', DOWN='api.github.com') == (0, '0 3 1 0 GRID0+ server'), run('check', DOWN='api.github.com')
+        assert run('apply')[0] == 0
         shutil.rmtree(fake)
         fake.mkdir()
         assert run('check', DOWN='api.github.com')[1].startswith('404 0 0 0'), 'no source: an error, no changes'

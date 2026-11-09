@@ -47,7 +47,10 @@ int main(int argc,char **argv) {
 '''
 with tempfile.TemporaryDirectory() as tmp:
     root = Path(tmp)
-    c = root/'update.c'; c.write_text(prefix+parser+extractor+suffix)
+    c = root/'update.c'; c.write_text(prefix + '\n'.join(
+        line for line in (Path(__file__).resolve().parents[1] / 'source/update.h').read_text().splitlines()
+        if line.startswith('#define GRID0_')
+    ) + '\n' + parser + extractor + suffix)
     exe=root/'update'
     subprocess.run(['cc','-Wall','-Wextra','-Werror',str(c),'-lminizip','-o',str(exe)],check=True)
     payloads={
@@ -117,6 +120,9 @@ with tempfile.TemporaryDirectory() as tmp:
         result=subprocess.run([str(exe),'parse',str(p)],capture_output=True,text=True)
         assert result.returncode==0,result.stderr
         assert result.stdout.strip()==f'{tag} 5000'
+      obj['assets'][1]['browser_download_url'] = obj['assets'][1]['browser_download_url'].replace('github.com', 'git.doughston.dev')
+      p.write_text(json.dumps(obj))
+      assert subprocess.run([str(exe),'parse',str(p)],capture_output=True).returncode==0
       bad=json.loads(json.dumps(obj));del bad['assets'][1]['browser_download_url']
       bad['assets'].append({'name':'wrong sibling','browser_download_url':obj['assets'][1]['browser_download_url']})
       p.write_text(json.dumps(bad));assert subprocess.run([str(exe),'parse',str(p)]).returncode!=0

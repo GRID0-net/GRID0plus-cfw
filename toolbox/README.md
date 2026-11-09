@@ -90,6 +90,11 @@ onto the SD card, at the same relative path, when GRID0+ mode is applied
   time) at `grid0plus/certs/grid0plus_root_ca.pem`, `rootCA.pem`, and the
   console's browser-applet CA bundle under
   `atmosphere/contents/0100000000000803/romfs/browser/`.
+Toolbox checks GitHub for Toolbox and sysmodule updates, then checks
+`git.doughston.dev` when GitHub has no usable release. If a download fails, it
+tries the same tagged asset on the other host. IPS checks also have a final
+fallback on the GRID0+ Toolbox API.
+
 The IPS patches below used to ship in `romfs/sd/` too. Since 0.9.0 none are
 bundled: they live in the repository's [`patches/`](../patches/README.md)
 directory, are published as `patches-<serial>` releases, and the Toolbox

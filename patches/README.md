@@ -31,9 +31,10 @@ hex digits), since which one is matched depends on the Atmosphère version.
 
 The release carries `manifest.json`, every file as `<sha256>.ips`, and
 `patches.zip` holding the same files, which the Toolbox downloads in one
-request. The GRID0+ server mirrors `manifest.json` and `patches.zip` under
-`/grid0plus/patches/` on the Toolbox API port, for when GitHub cannot be
-reached.
+request. Toolbox tries GitHub first, then the release on `git.doughston.dev`.
+The GRID0+ server also mirrors `manifest.json` and `patches.zip` under
+`/grid0plus/patches/` on the Toolbox API port as the final fallback. Publish the same
+release assets on both Git hosts so the fallback can serve the same serial.
 
 Nothing reaches a console or an emulator before step 4. Deleting a patch here
 removes it from devices on their next check, because clients remove files
