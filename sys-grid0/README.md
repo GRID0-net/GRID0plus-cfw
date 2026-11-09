@@ -111,7 +111,9 @@ verify cleanup, not Horizon or ZeroTier behavior. Memory-headroom checks also
 remain active while waiting for configuration and retrying startup, rather
 than only after reaching the run loop.
 
-The optional PSC monitor stays disabled by default. If its worker cannot be
+The optional PSC monitor stays disabled by default. Its 16 KiB worker stack
+is allocated from the existing arena only when enabled, removing the
+permanent stack reservation from BSS. If its worker cannot be
 created after registration, it unregisters and destroys its local object;
 failed unregistration stops the process rather than retaining a power-state
 participant with no thread to acknowledge requests. Console sleep/wake testing

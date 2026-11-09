@@ -6,6 +6,7 @@
  * stratosphere sysmodule brings up bsd sockets.
  */
 #include <stratosphere.hpp>
+#include <cstdlib>
 
 extern "C" {
 #include <switch.h>
@@ -297,7 +298,7 @@ namespace ams {
          * dereferenced a null heap and cost us a boot. */
         constinit util::TypedStorage<psc::PmModule> g_pm_module_storage = {};
         constinit psc::PmModule *g_pm_module = nullptr;
-        alignas(os::MemoryPageSize) u8 g_psc_thread_stack[16_KB];
+        constexpr size_t PscThreadStackSize = 16_KB;
         os::ThreadType g_psc_thread;
 
         void PscThreadMain(void *) {
@@ -361,6 +362,18 @@ namespace ams {
                 return;
             }
 
+            /* PSC is opt-in. Use the existing allocator only when enabled,
+             * and keep the backing allocation for the lifetime of the worker. */
+            void *stack_storage = std::malloc(PscThreadStackSize + os::MemoryPageSize - 1);
+            if (stack_storage == nullptr) {
+                ztnx::Trace("psc: could not allocate monitor stack");
+                return;
+            }
+            bool worker_started = false;
+            ON_SCOPE_EXIT { if (!worker_started) { std::free(stack_storage); } };
+            void *stack = reinterpret_cast<void *>(
+                util::AlignUp(reinterpret_cast<uintptr_t>(stack_storage), os::MemoryPageSize));
+
             const u32 mid = (u32)ztnx::ConfigValue("psc_module_id", (int)DefaultPscModuleId);
 
             g_pm_module = util::ConstructAt(g_pm_module_storage);
@@ -379,7 +392,7 @@ namespace ams {
             ztnx::Trace("psc: registered as module id %u", (unsigned)mid);
 
             if (R_FAILED(os::CreateThread(std::addressof(g_psc_thread), PscThreadMain, nullptr,
-                                          g_psc_thread_stack, sizeof(g_psc_thread_stack),
+                                          stack, PscThreadStackSize,
                                           os::DefaultThreadPriority))) {
                 ztnx::Trace("psc: could not create monitor thread");
                 /* A registered module with no acknowledger can block sleep.
@@ -395,6 +408,7 @@ namespace ams {
                 return;
             }
             os::StartThread(std::addressof(g_psc_thread));
+            worker_started = true;
         }
 
         constinit ztnx::Port g_port;
