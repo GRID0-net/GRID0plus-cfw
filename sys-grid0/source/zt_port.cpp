@@ -28,6 +28,7 @@ extern "C" {
 #include <errno.h>
 }
 
+#include <algorithm>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
@@ -776,9 +777,11 @@ namespace ztnx {
 
         va_list ap;
         va_start(ap, fmt);
-        n = std::vsnprintf(g_trace + g_traceLen, TraceCapacity - g_traceLen, fmt, ap);
+        const size_t remaining = TraceCapacity - g_traceLen;
+        n = std::vsnprintf(g_trace + g_traceLen, remaining, fmt, ap);
         va_end(ap);
-        if (n > 0) { g_traceLen += (size_t)n; }
+        /* vsnprintf reports the untruncated length, not the bytes written. */
+        if (n > 0) { g_traceLen += std::min(static_cast<size_t>(n), remaining - 1); }
 
         if (g_traceLen < TraceCapacity - 1) { g_trace[g_traceLen++] = '\n'; }
         g_trace[g_traceLen] = '\0';
