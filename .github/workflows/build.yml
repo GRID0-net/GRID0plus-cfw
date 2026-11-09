@@ -55,8 +55,8 @@ jobs:
           MAJOR=$(echo "${APP_VERSION}" | cut -d. -f1)
           MINOR=$(echo "${APP_VERSION}" | cut -d. -f2)
           echo "app_version=${APP_VERSION}" >> "$GITHUB_OUTPUT"
-          # Beta phase (major version 0): release title tracks major.minor.
-          echo "release_name=beta-${MAJOR}.${MINOR}" >> "$GITHUB_OUTPUT"
+          # release title tracks major.minor.
+          echo "release_name=${MAJOR}.${MINOR}" >> "$GITHUB_OUTPUT"
           if gh release view "v${APP_VERSION}" -R "${{ github.repository }}" >/dev/null 2>&1; then
             echo "release_tag=v${APP_VERSION}-sys.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
             echo "toolbox_released=true" >> "$GITHUB_OUTPUT"
