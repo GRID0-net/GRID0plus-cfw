@@ -1623,9 +1623,17 @@ namespace ztnx {
          * but recovery alternates with an ephemeral source port so reopening
          * the socket actually gives a difficult router a fresh mapping. */
         bindAddr.sin_port        = htons(m_wireEphemeral ? 0 : DefaultWirePort);
-        if (::bind(m_wireFd, (struct sockaddr *)&bindAddr, sizeof(bindAddr)) != 0) {
+        int bindResult = ::bind(m_wireFd, (struct sockaddr *)&bindAddr, sizeof(bindAddr));
+        if (bindResult != 0 && errno == EADDRINUSE && !m_wireEphemeral) {
+            Trace("wire: UDP/%u occupied, trying an ephemeral port", (unsigned)DefaultWirePort);
+            bindAddr.sin_port = 0;
+            bindResult = ::bind(m_wireFd, (struct sockaddr *)&bindAddr, sizeof(bindAddr));
+        }
+        if (bindResult != 0) {
+            const int bindError = errno;
             ::close(m_wireFd);
             m_wireFd = -1;
+            errno = bindError;
             return false;
         }
 
@@ -2113,6 +2121,11 @@ namespace ztnx {
                  * free-runs. Count it and pace by hand. */
                 ++m_pollErr;
                 m_pollErrno = errno;
+                if (m_pollErrno == EBADF || m_pollErrno == EPIPE) {
+                    m_wireErrno = m_pollErrno;
+                    m_wireReachable.store(false, std::memory_order_release);
+                    m_wireHup = true;
+                }
                 os::SleepThread(TimeSpan::FromMilliSeconds(10));
             } else if (pr == 0) {
                 ++m_pollZero;
@@ -2128,10 +2141,10 @@ namespace ztnx {
                 os::SleepThread(TimeSpan::FromMilliSeconds(10));
             }
 
-            if (pr > 0 && (pfd.revents & POLLIN)) {
+            if (pr > 0 && !m_wireHup && (pfd.revents & POLLIN)) {
                 struct sockaddr_storage from = {};
                 socklen_t fromlen = sizeof(from);
-                const ssize_t n = ::recvfrom(m_wireFd, rx, sizeof(rx), 0,
+                const ssize_t n = ::recvfrom(m_wireFd, rx, sizeof(rx), MSG_DONTWAIT,
                                            (struct sockaddr *)&from, &fromlen);
                 if (n > 0) {
                     ++m_wireRx;
