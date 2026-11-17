@@ -176,6 +176,16 @@ it cannot.
   `0x7103B09CB8` still runs, but the branch that raises the error at
   `0x7103B09E64` becomes unconditional, so it is never raised. Regenerate with
   `python3 tools/make_s3_moveless.py [main.flat]`.
+- **`s3gearcheck_bypass`**, one patch, for the same Splatoon 3 build. The game
+  checks every player's loadout with `0x7103572DF0` (gear, abilities, rarity,
+  weapon level, name, splashtag) and drops the room with
+  `UserSettingValidation` (someone else's loadout, `0x710389C0E0`) or
+  `MyUserSettingValidation` (your own, `0x71032B88F0`) when anything is out of
+  range. That is the comm error a save with "illegal" gear causes; the
+  schedule's anti-cheat flags don't gate it. The three branches to those
+  errors are skipped. The validator still repairs its copy, so an illegal
+  ability shows as the default to others instead of kicking anyone.
+  Regenerate with `python3 tools/make_s3_gearcheck.py [main.flat]`.
 - **`bcat_signature_bypass`**, one patch, for the `bcat` sysmodule build
   `6D9772A7…` that firmware **22.5.0** ships. It replaces the boolean BCAT
   stores from its central RSA verification callback, that callback's own

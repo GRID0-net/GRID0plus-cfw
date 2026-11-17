@@ -1,5 +1,5 @@
 {
-  "serial": 2,
+  "serial": 3,
   "patches": [
     {
       "name": "s3certpin_bypass",
@@ -23,6 +23,34 @@
       "size": 21,
       "sha256": "4ca7681d1f2d4a88699f38bf0c1fef6a17226b5ff89ee8be0a12085b5e90d4c4",
       "asset": "4ca7681d1f2d4a88699f38bf0c1fef6a17226b5ff89ee8be0a12085b5e90d4c4.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3gearcheck_bypass",
+      "kind": "game",
+      "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75",
+      "dest": "exefs_patches/s3gearcheck_bypass/28C4287AEE36F7499DA60F3E68B54C70DA382D75.ips",
+      "size": 39,
+      "sha256": "c0ffc6596e59a188a4f698c7c0ce6fb7031badcad2f33aecb0185781ef6c8387",
+      "asset": "c0ffc6596e59a188a4f698c7c0ce6fb7031badcad2f33aecb0185781ef6c8387.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3gearcheck_bypass",
+      "kind": "game",
+      "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75000000000000000000000000",
+      "dest": "exefs_patches/s3gearcheck_bypass/28C4287AEE36F7499DA60F3E68B54C70DA382D75000000000000000000000000.ips",
+      "size": 39,
+      "sha256": "c0ffc6596e59a188a4f698c7c0ce6fb7031badcad2f33aecb0185781ef6c8387",
+      "asset": "c0ffc6596e59a188a4f698c7c0ce6fb7031badcad2f33aecb0185781ef6c8387.ips",
       "targets": [
         "console",
         "emulator"
