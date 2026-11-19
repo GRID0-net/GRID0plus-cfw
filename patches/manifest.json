@@ -30,6 +30,34 @@
       "title_id": "0100C2500FC20000"
     },
     {
+      "name": "s3certpin_bypass",
+      "kind": "game",
+      "build_id": "6CBB16698653E1AF3C3A7602164819BB3750866B",
+      "dest": "exefs_patches/s3certpin_bypass/6CBB16698653E1AF3C3A7602164819BB3750866B.ips",
+      "size": 21,
+      "sha256": "606aa9a3e57c488328f3e608fc485e59587ae7a3474148c76f1ed5f3b9c9a7fe",
+      "asset": "606aa9a3e57c488328f3e608fc485e59587ae7a3474148c76f1ed5f3b9c9a7fe.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3certpin_bypass",
+      "kind": "game",
+      "build_id": "6CBB16698653E1AF3C3A7602164819BB3750866B000000000000000000000000",
+      "dest": "exefs_patches/s3certpin_bypass/6CBB16698653E1AF3C3A7602164819BB3750866B000000000000000000000000.ips",
+      "size": 21,
+      "sha256": "606aa9a3e57c488328f3e608fc485e59587ae7a3474148c76f1ed5f3b9c9a7fe",
+      "asset": "606aa9a3e57c488328f3e608fc485e59587ae7a3474148c76f1ed5f3b9c9a7fe.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
       "name": "s3gearcheck_bypass",
       "kind": "game",
       "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75",
@@ -114,6 +142,34 @@
       "title_id": "0100C2500FC20000"
     },
     {
+      "name": "s3grpcpeer_bypass",
+      "kind": "game",
+      "build_id": "6CBB16698653E1AF3C3A7602164819BB3750866B",
+      "dest": "exefs_patches/s3grpcpeer_bypass/6CBB16698653E1AF3C3A7602164819BB3750866B.ips",
+      "size": 26,
+      "sha256": "bbd9c0b8cb3940907a860cd34c12fa65d8e308a5c907cba054316ce47521b3b4",
+      "asset": "bbd9c0b8cb3940907a860cd34c12fa65d8e308a5c907cba054316ce47521b3b4.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3grpcpeer_bypass",
+      "kind": "game",
+      "build_id": "6CBB16698653E1AF3C3A7602164819BB3750866B000000000000000000000000",
+      "dest": "exefs_patches/s3grpcpeer_bypass/6CBB16698653E1AF3C3A7602164819BB3750866B000000000000000000000000.ips",
+      "size": 26,
+      "sha256": "bbd9c0b8cb3940907a860cd34c12fa65d8e308a5c907cba054316ce47521b3b4",
+      "asset": "bbd9c0b8cb3940907a860cd34c12fa65d8e308a5c907cba054316ce47521b3b4.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
       "name": "s3grpcverify_bypass",
       "kind": "game",
       "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75",
@@ -132,6 +188,34 @@
       "kind": "game",
       "build_id": "28C4287AEE36F7499DA60F3E68B54C70DA382D75000000000000000000000000",
       "dest": "exefs_patches/s3grpcverify_bypass/28C4287AEE36F7499DA60F3E68B54C70DA382D75000000000000000000000000.ips",
+      "size": 17,
+      "sha256": "80d1c8550017695f699aa4fe569b425250b8bf5ee417815ba158fd4ab7d0cfdc",
+      "asset": "80d1c8550017695f699aa4fe569b425250b8bf5ee417815ba158fd4ab7d0cfdc.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3grpcverify_bypass",
+      "kind": "game",
+      "build_id": "6CBB16698653E1AF3C3A7602164819BB3750866B",
+      "dest": "exefs_patches/s3grpcverify_bypass/6CBB16698653E1AF3C3A7602164819BB3750866B.ips",
+      "size": 17,
+      "sha256": "80d1c8550017695f699aa4fe569b425250b8bf5ee417815ba158fd4ab7d0cfdc",
+      "asset": "80d1c8550017695f699aa4fe569b425250b8bf5ee417815ba158fd4ab7d0cfdc.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3grpcverify_bypass",
+      "kind": "game",
+      "build_id": "6CBB16698653E1AF3C3A7602164819BB3750866B000000000000000000000000",
+      "dest": "exefs_patches/s3grpcverify_bypass/6CBB16698653E1AF3C3A7602164819BB3750866B000000000000000000000000.ips",
       "size": 17,
       "sha256": "80d1c8550017695f699aa4fe569b425250b8bf5ee417815ba158fd4ab7d0cfdc",
       "asset": "80d1c8550017695f699aa4fe569b425250b8bf5ee417815ba158fd4ab7d0cfdc.ips",
@@ -275,6 +359,34 @@
       "size": 17,
       "sha256": "e29637250e57f52cfd55dfa7e4ebd991078e92ab89d85c68f12aa2f5225eedcc",
       "asset": "e29637250e57f52cfd55dfa7e4ebd991078e92ab89d85c68f12aa2f5225eedcc.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3verifyoption_bypass",
+      "kind": "game",
+      "build_id": "6CBB16698653E1AF3C3A7602164819BB3750866B",
+      "dest": "exefs_patches/s3verifyoption_bypass/6CBB16698653E1AF3C3A7602164819BB3750866B.ips",
+      "size": 17,
+      "sha256": "5a96b1a22a3c567f528f88c1b8d784934f8b9dab0c6ab046487380551657b70b",
+      "asset": "5a96b1a22a3c567f528f88c1b8d784934f8b9dab0c6ab046487380551657b70b.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3verifyoption_bypass",
+      "kind": "game",
+      "build_id": "6CBB16698653E1AF3C3A7602164819BB3750866B000000000000000000000000",
+      "dest": "exefs_patches/s3verifyoption_bypass/6CBB16698653E1AF3C3A7602164819BB3750866B000000000000000000000000.ips",
+      "size": 17,
+      "sha256": "5a96b1a22a3c567f528f88c1b8d784934f8b9dab0c6ab046487380551657b70b",
+      "asset": "5a96b1a22a3c567f528f88c1b8d784934f8b9dab0c6ab046487380551657b70b.ips",
       "targets": [
         "console",
         "emulator"
