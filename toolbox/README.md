@@ -167,8 +167,18 @@ it cannot.
   three peers. A stricter zero-count gate blocked the same-Wi-Fi control and
   was reverted. A replacement needs the actual session roster and another
   hardware measurement; increasing a delay is not an established fix.
-  Regenerate with `python3 tools/make_s3_smallmatch.py [main.flat]`; the optional
-  dump verifies every original instruction. A game update needs a new patch.
+  Game update 12.0.0 (build `6CBB1669…`) carries the same patch, ported
+  site by site: every original instruction and branch destination was checked
+  against the 12.0.0 executable. The readiness gate's imported routines were
+  resolved through their GOT relocations, its root pointer moved to
+  `0x71061F3B48`, and the 12.0.0 Tricolor lobby wait inverts its equality, so
+  its `b.ne` becomes `b.gt` (the same one-or-two-player set). One rematch
+  padding span is new; every span is unreferenced. Hardware test pending.
+  Regenerate with `python3 tools/make_s3_smallmatch.py [--version 12.0.0] [main.flat]`;
+  the optional dump verifies every original instruction. The emulator tests
+  take the same version: `tools/test_s3_peer_group_gate.py 12.0.0` and
+  `tools/test_s3_rematch.py main.flat 12.0.0`. Another game update needs a new
+  patch.
 - **`s3moveless_bypass`**, one patch, for the same Splatoon 3 build. The game
   ends a battle for a player whose sticks, buttons and speed stay unchanged
   for a while (`PlayerMoveless`); it kicked emulator players who were moving,

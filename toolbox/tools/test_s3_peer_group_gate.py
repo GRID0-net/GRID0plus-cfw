@@ -1,6 +1,6 @@
 """Execute assembled readiness gate, including ownership and ABI restoration.
 
-PYTHONPATH=<unicorn install> python tools/test_s3_peer_group_gate.py
+PYTHONPATH=<unicorn install> python tools/test_s3_peer_group_gate.py [11.3.0|12.0.0]
 Native mutex/weak-lock/group-accessor calls are simulated; ARM64 gate and its
 atomic shared-owner releases execute. This is not a hardware validation.
 """
@@ -10,12 +10,16 @@ import sys
 from unicorn import Uc, UC_ARCH_ARM64, UC_MODE_ARM, UC_HOOK_CODE
 from unicorn.arm64_const import *
 import make_s3_peer_group_gate as patch
+VERSION = sys.argv[1] if len(sys.argv) > 1 else '11.3.0'
+BUILD = patch.BUILDS[VERSION]
 class Legacy:
-    WAIT_HOOK, WAIT_MORE, WAIT_ENOUGH = 0x38a4210, 0x38a4254, 0x38a4214
+    WAIT_HOOK, WAIT_MORE, WAIT_ENOUGH = BUILD['hook'], BUILD['wait_more'], BUILD['wait_enough']
 patch.legacy = Legacy
+patch.NATIVES = dict(BUILD['natives'], wait_more=BUILD['wait_more'], wait_enough=BUILD['wait_enough'])
+ROOT = BUILD['natives']['root_page'] + BUILD['root_offset']
 
 B, D, SP = 0x7100000000, 0x7200000000, 0x7300010000
-records = json.loads(__import__('pathlib').Path(__file__).with_name('s3_peer_group_wait_records.json').read_text())
+records = json.loads(__import__('pathlib').Path(__file__).with_name(BUILD['records']).read_text())
 
 
 def execute(connected, assigned, flags=0x101, missing=None, selected=0, name=0x6c6c4106, full=8, drop_baseline=False):
@@ -38,7 +42,7 @@ def execute(connected, assigned, flags=0x101, missing=None, selected=0, name=0x6
     write(SP - 0x2000, bytes(0x4000))
     write(D, bytes(0x10000))
     # Use the same ownership chain validated by attempt 12.
-    q(B + 0x61e18a0, D)
+    q(B + ROOT, D)
     root, manager, array = D, D + 0x1000, D + 0x3000
     box, handle, api, api_owner = D + 0x4000, D + 0x5000, D + 0x6000, D + 0x7000
     impl, group, group_owner = D + 0x8000, D + 0x9000, D + 0xa000
@@ -62,7 +66,7 @@ def execute(connected, assigned, flags=0x101, missing=None, selected=0, name=0x6
     q(group + 0xb8, assigned)
     q(group + 0x1a8, name)
     write(group + 0x1fa, struct.pack('<H', flags))
-    for tag, at in [('root', B + 0x61e18a0), ('manager', root + 0x80),
+    for tag, at in [('root', B + ROOT), ('manager', root + 0x80),
                     ('array', manager + 0x12b0), ('entry', array), ('box', array + 8),
                     ('handle', box), ('api', handle), ('api_owner', handle + 8)]:
         if missing == tag:
@@ -79,7 +83,7 @@ def execute(connected, assigned, flags=0x101, missing=None, selected=0, name=0x6
     original = connected & 0xffffffff
     uc.reg_write(UC_ARM64_REG_X0, original)
     uc.reg_write(UC_ARM64_REG_SP, SP)
-    uc.reg_write(UC_ARM64_REG_LR, B + 0x38a420c)
+    uc.reg_write(UC_ARM64_REG_LR, B + BUILD['hook'] - 4)
     saved = {getattr(__import__('unicorn.arm64_const', fromlist=['']), f'UC_ARM64_REG_X{n}'): 0x10000 + n for n in range(19, 30)}
     saved[UC_ARM64_REG_X24] = full
     for reg, value in saved.items():
@@ -145,7 +149,7 @@ def execute(connected, assigned, flags=0x101, missing=None, selected=0, name=0x6
     assert len(hit) == 1 and not locked
     assert uc.reg_read(UC_ARM64_REG_SP) == SP
     assert uc.reg_read(UC_ARM64_REG_X0) == original
-    assert uc.reg_read(UC_ARM64_REG_LR) == B + 0x38a420c
+    assert uc.reg_read(UC_ARM64_REG_LR) == B + BUILD['hook'] - 4
     for reg, value in saved.items():
         assert uc.reg_read(reg) == value, reg
     expected_counts = tuple((n - 1) & 0xffffffffffffffff for n in before) if drop_baseline else before
@@ -174,4 +178,4 @@ assert not execute(3, 3, selected=1)
 assert execute(3, 3, selected=2)
 assert not execute(3, 3, name=0)
 assert execute(3, 3, drop_baseline=True)
-print(f'{cases + 4} ARM64 ownership/readiness cases passed')
+print(f'{VERSION}: {cases + 4} ARM64 ownership/readiness cases passed')

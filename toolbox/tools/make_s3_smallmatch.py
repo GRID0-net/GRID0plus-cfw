@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Regenerate the v11.3.0 undersized-match patch from independently checked RVAs.
+"""Regenerate the Splatoon 3 undersized-match patch from independently checked RVAs.
+
+    make_s3_smallmatch.py [--version 11.3.0|12.0.0] [operator-main.flat]
 
 Optionally pass the operator's main.flat to verify the original instructions.
 The game dump is never copied into the repository. Atmosphere offsets include
 its 0x100-byte NSO header; the generic builder selects IPS32 for these RVAs.
 """
+import argparse
 from pathlib import Path
 import subprocess
 import sys
@@ -81,8 +84,13 @@ RECORDS += [
 # The companion generator contains readable ARM64 and reproduces these records.
 import json
 WAIT_HOOK, WAIT_MORE, WAIT_ENOUGH = 0x38A4210, 0x38A4254, 0x38A4214
-WAIT_RECORDS = [tuple(row) for row in json.loads(
-    Path(__file__).with_name("s3_peer_group_wait_records.json").read_text())]
+
+
+def wait_records(name):
+    return [tuple(row) for row in json.loads(Path(__file__).with_name(name).read_text())]
+
+
+WAIT_RECORDS = wait_records("s3_peer_group_wait_records.json")
 RECORDS += WAIT_RECORDS
 # Keep every start route in this retained-lobby controller behind the server's
 # backfill lock, rather than increasing its 120-update player-stability timer.
@@ -90,21 +98,75 @@ RECORDS += [(0x389F654, instruction(branch(0x389F654, 0x389F798, condition=11)),
 RECORDS += [(rva, "00" * 12, "".join(instruction(w) for w in words)) for rva, words in REMATCH_BLOCKS.items()]
 
 
+
+# 12.0.0 (build 6CBB1669...). Every original instruction and branch
+# destination below was checked against the 12.0.0 executable; the lobby, the
+# rematch controller and the wait loop keep their 11.3.0 shape and structure
+# offsets (session manager +41/+64/+73, lobby +0x214, +0x2ec).
+#  - Tricolor lobby wait: 12.0.0 inverts the equality, b.ne to the "not yet"
+#    path at +0x38b4028 (cmp count, 1; b.lt; cmp count, required; b.ge), with
+#    the "count == required" path falling through. b.ne becomes b.gt, so one
+#    or two players take the fall-through, the same set 11.3.0's b.le admits.
+#  - Rematch: the controller's b.lt is at +0x38a8254; its destinations are
+#    +0x38a839c (lt) and +0x38a8258 (fall-through), and the lobby wait the
+#    gate jumps to is +0x38a8738 (fcvtzs w22, s8; 11.3.0 used w21). Live-in
+#    registers at all three are x19, x23-x28 and d8-d15 in both builds, none of
+#    which the skipped code writes, and x8/x16 are dead there.
+#  - Padding A, B, C, D: three UDF words each, unreferenced (see the
+#    readiness generator for the checks), within +-1 MiB of every conditional
+#    target. C is a new span; 11.3.0's C has no 12.0.0 counterpart.
+A12, B12, C12, D12 = 0x3899AD4, 0x3899E54, 0x38A3214, 0x38AB674
+WAIT12, LT12, NEXT12, GATE12 = 0x38A8738, 0x38A839C, 0x38A8258, 0x38A8254
+REMATCH_BLOCKS_12 = {
+    A12: [0xf9400308, 0x3940a510, branch(A12+8, B12)],
+    B12: [branch(B12, WAIT12, register=16), 0x39410110, branch(B12+8, D12)],
+    D12: [branch(D12, C12+4, register=16, zero=True), 0x39412508, branch(D12+8, C12)],
+    C12: [branch(C12, WAIT12, register=8), branch(C12+4, LT12, condition=11), branch(C12+8, NEXT12)],
+}
+RECORDS_12 = [
+    (0x38AD098, "1f00186b", "1f00006b"),  # WaitFullmember
+    (0x32C375C, "9f02006b", "1f00006b"),  # MatchSyncDisconnect1
+    (0x389F6C0, "bf02086b", "1f01086b"),  # ShareMemberNumInvalid3
+    (0x38A8350, "1f00086b", "1f080071"),  # lobby minimum
+    (0x38A8468, "1f00086b", "1f080071"),  # lobby minimum
+    (0x38B3F30, "c1070054", "cc070054"),  # tricolor lobby wait: b.ne -> b.gt
+    (0x38B83A4, "80010054", "8d010054"),  # tricolor delegation: b.eq -> b.le
+]
+RECORDS_12 += wait_records("s3_peer_group_wait_records-12.0.0.json")
+RECORDS_12 += [(GATE12, instruction(branch(GATE12, LT12, condition=11)), instruction(branch(GATE12, A12)))]
+RECORDS_12 += [(rva, "00" * 12, "".join(instruction(w) for w in words)) for rva, words in REMATCH_BLOCKS_12.items()]
+
+BUILDS = {
+    "11.3.0": (BUILD_ID, RECORDS),
+    "12.0.0": ("6CBB16698653E1AF3C3A7602164819BB3750866B", RECORDS_12),
+}
+# Emulator tests read these per build.
+REMATCH = {
+    "11.3.0": {"gate": 0x389F654, "wait": WAIT, "lt": 0x389F798, "next": 0x389F658, "manager_slot": 0x605C278},
+    "12.0.0": {"gate": GATE12, "wait": WAIT12, "lt": LT12, "next": NEXT12, "manager_slot": 0x606B278},
+}
+
+
 def main():
-    if len(sys.argv) > 2:
-        raise SystemExit("usage: make_s3_smallmatch.py [operator-main.flat]")
-    if len(sys.argv) == 2:
-        data = Path(sys.argv[1]).read_bytes()
-        for rva, expected, _ in RECORDS:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--version", choices=BUILDS, default="11.3.0")
+    parser.add_argument("main_flat", type=Path, nargs="?")
+    options = parser.parse_args()
+    build_id, records = BUILDS[options.version]
+    spans = sorted((rva, rva + len(bytes.fromhex(patch))) for rva, _, patch in records)
+    assert all(end <= start for (_, end), (start, _) in zip(spans, spans[1:])), "overlapping records"
+    if options.main_flat:
+        data = options.main_flat.read_bytes()
+        for rva, expected, _ in records:
             if data[rva:rva + len(bytes.fromhex(expected))] != bytes.fromhex(expected):
                 raise SystemExit(f"Unexpected instruction at {rva:#x}; do not patch this build")
     root = Path(__file__).resolve().parent.parent
     output = root.parent / "patches/game/0100C2500FC20000/exefs_patches/s3smallmatch_bypass"
     output.mkdir(parents=True, exist_ok=True)
-    args = [arg for rva, _, patch in RECORDS for arg in (hex(rva), patch)]
-    first = output / f"{BUILD_ID}.ips"
+    args = [arg for rva, _, patch in records for arg in (hex(rva), patch)]
+    first = output / f"{build_id}.ips"
     subprocess.run([sys.executable, str(root / "tools/make_exefs_ips.py"), str(first), *args], check=True)
-    (output / f"{BUILD_ID}{'0' * 24}.ips").write_bytes(first.read_bytes())
+    (output / f"{build_id}{'0' * 24}.ips").write_bytes(first.read_bytes())
 
 
 if __name__ == "__main__":
