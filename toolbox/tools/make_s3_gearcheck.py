@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate the v11.3.0 loadout-kick patch (s3gearcheck_bypass).
+"""Regenerate the Splatoon 3 loadout-kick patch (s3gearcheck_bypass).
 
 Splatoon 3 validates every player's loadout (name, weapon, the three gear
 pieces, their main and sub abilities, splashtag parts) with the function at
@@ -23,6 +23,7 @@ render never reaches it.
 Optionally pass the operator's main.flat to verify the original instructions.
 The game dump is never copied into the repository.
 """
+import argparse
 from pathlib import Path
 import subprocess
 import sys
@@ -35,21 +36,34 @@ RECORDS = [
 ]
 
 
+BUILDS = {
+    "11.3.0": (BUILD_ID, RECORDS),
+    "12.0.0": ("6CBB16698653E1AF3C3A7602164819BB3750866B", [
+    (0x38A3C70, "60020037", "1f2003d5"),
+    (0x38A3CB8, "c0120036", "96000014"),
+    (0x32BA294, "000b0036", "58000014"),
+    ]),
+}
+
+
 def main():
-    if len(sys.argv) > 2:
-        raise SystemExit("usage: make_s3_gearcheck.py [operator-main.flat]")
-    if len(sys.argv) == 2:
-        data = Path(sys.argv[1]).read_bytes()
-        for rva, expected, _ in RECORDS:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--version", choices=BUILDS, default="11.3.0")
+    parser.add_argument("main_flat", type=Path, nargs="?")
+    options = parser.parse_args()
+    build_id, records = BUILDS[options.version]
+    if options.main_flat:
+        data = options.main_flat.read_bytes()
+        for rva, expected, _ in records:
             if data[rva:rva + 4] != bytes.fromhex(expected):
                 raise SystemExit(f"Unexpected instruction at {rva:#x}; do not patch this build")
     root = Path(__file__).resolve().parent.parent
     output = root.parent / "patches/game/0100C2500FC20000/exefs_patches/s3gearcheck_bypass"
     output.mkdir(parents=True, exist_ok=True)
-    args = [arg for rva, _, patch in RECORDS for arg in (hex(rva), patch)]
-    first = output / f"{BUILD_ID}.ips"
+    args = [arg for rva, _, patch in records for arg in (hex(rva), patch)]
+    first = output / f"{build_id}.ips"
     subprocess.run([sys.executable, str(root / "tools/make_exefs_ips.py"), str(first), *args], check=True)
-    (output / f"{BUILD_ID}{'0' * 24}.ips").write_bytes(first.read_bytes())
+    (output / f"{build_id}{'0' * 24}.ips").write_bytes(first.read_bytes())
 
 
 if __name__ == "__main__":

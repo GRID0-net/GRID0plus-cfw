@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate the v11.3.0 idle-kick patch (s3moveless_bypass).
+"""Regenerate the Splatoon 3 idle-kick patch (s3moveless_bypass).
 
 Splatoon 3 ends a battle for a player whose sticks, buttons and speed have not
 changed for a while, raising PlayerMoveless. On GRID0+ that kicked emulator
@@ -11,6 +11,7 @@ unconditional, so the counter still runs but the error is never raised.
 Optionally pass the operator's main.flat to verify the original instruction.
 The game dump is never copied into the repository.
 """
+import argparse
 from pathlib import Path
 import subprocess
 import sys
@@ -21,21 +22,32 @@ RECORDS = [
 ]
 
 
+BUILDS = {
+    "11.3.0": (BUILD_ID, RECORDS),
+    "12.0.0": ("6CBB16698653E1AF3C3A7602164819BB3750866B", [
+    (0x3B169F4, "ab010054", "0d000014"),
+    ]),
+}
+
+
 def main():
-    if len(sys.argv) > 2:
-        raise SystemExit("usage: make_s3_moveless.py [operator-main.flat]")
-    if len(sys.argv) == 2:
-        data = Path(sys.argv[1]).read_bytes()
-        for rva, expected, _ in RECORDS:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--version", choices=BUILDS, default="11.3.0")
+    parser.add_argument("main_flat", type=Path, nargs="?")
+    options = parser.parse_args()
+    build_id, records = BUILDS[options.version]
+    if options.main_flat:
+        data = options.main_flat.read_bytes()
+        for rva, expected, _ in records:
             if data[rva:rva + 4] != bytes.fromhex(expected):
                 raise SystemExit(f"Unexpected instruction at {rva:#x}; do not patch this build")
     root = Path(__file__).resolve().parent.parent
     output = root.parent / "patches/game/0100C2500FC20000/exefs_patches/s3moveless_bypass"
     output.mkdir(parents=True, exist_ok=True)
-    args = [arg for rva, _, patch in RECORDS for arg in (hex(rva), patch)]
-    first = output / f"{BUILD_ID}.ips"
+    args = [arg for rva, _, patch in records for arg in (hex(rva), patch)]
+    first = output / f"{build_id}.ips"
     subprocess.run([sys.executable, str(root / "tools/make_exefs_ips.py"), str(first), *args], check=True)
-    (output / f"{BUILD_ID}{'0' * 24}.ips").write_bytes(first.read_bytes())
+    (output / f"{build_id}{'0' * 24}.ips").write_bytes(first.read_bytes())
 
 
 if __name__ == "__main__":

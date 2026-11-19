@@ -1,5 +1,5 @@
 {
-  "serial": 3,
+  "serial": 4,
   "patches": [
     {
       "name": "s3certpin_bypass",
@@ -51,6 +51,34 @@
       "size": 39,
       "sha256": "c0ffc6596e59a188a4f698c7c0ce6fb7031badcad2f33aecb0185781ef6c8387",
       "asset": "c0ffc6596e59a188a4f698c7c0ce6fb7031badcad2f33aecb0185781ef6c8387.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3gearcheck_bypass",
+      "kind": "game",
+      "build_id": "6CBB16698653E1AF3C3A7602164819BB3750866B",
+      "dest": "exefs_patches/s3gearcheck_bypass/6CBB16698653E1AF3C3A7602164819BB3750866B.ips",
+      "size": 39,
+      "sha256": "208c61ef5c209324fec67197e83c6f6eb0a28ed0cf45a11950cc8b17be06f154",
+      "asset": "208c61ef5c209324fec67197e83c6f6eb0a28ed0cf45a11950cc8b17be06f154.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3gearcheck_bypass",
+      "kind": "game",
+      "build_id": "6CBB16698653E1AF3C3A7602164819BB3750866B000000000000000000000000",
+      "dest": "exefs_patches/s3gearcheck_bypass/6CBB16698653E1AF3C3A7602164819BB3750866B000000000000000000000000.ips",
+      "size": 39,
+      "sha256": "208c61ef5c209324fec67197e83c6f6eb0a28ed0cf45a11950cc8b17be06f154",
+      "asset": "208c61ef5c209324fec67197e83c6f6eb0a28ed0cf45a11950cc8b17be06f154.ips",
       "targets": [
         "console",
         "emulator"
@@ -135,6 +163,34 @@
       "size": 19,
       "sha256": "dc41a2016593800b26f903015f7ed131e7e293bba01cff96dc94c7076bd10aff",
       "asset": "dc41a2016593800b26f903015f7ed131e7e293bba01cff96dc94c7076bd10aff.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3moveless_bypass",
+      "kind": "game",
+      "build_id": "6CBB16698653E1AF3C3A7602164819BB3750866B",
+      "dest": "exefs_patches/s3moveless_bypass/6CBB16698653E1AF3C3A7602164819BB3750866B.ips",
+      "size": 19,
+      "sha256": "03a73f4ad2c1577397a4648522f654c4a3e28d09992dab077f60d1b8a8bd20d4",
+      "asset": "03a73f4ad2c1577397a4648522f654c4a3e28d09992dab077f60d1b8a8bd20d4.ips",
+      "targets": [
+        "console",
+        "emulator"
+      ],
+      "title_id": "0100C2500FC20000"
+    },
+    {
+      "name": "s3moveless_bypass",
+      "kind": "game",
+      "build_id": "6CBB16698653E1AF3C3A7602164819BB3750866B000000000000000000000000",
+      "dest": "exefs_patches/s3moveless_bypass/6CBB16698653E1AF3C3A7602164819BB3750866B000000000000000000000000.ips",
+      "size": 19,
+      "sha256": "03a73f4ad2c1577397a4648522f654c4a3e28d09992dab077f60d1b8a8bd20d4",
+      "asset": "03a73f4ad2c1577397a4648522f654c4a3e28d09992dab077f60d1b8a8bd20d4.ips",
       "targets": [
         "console",
         "emulator"
