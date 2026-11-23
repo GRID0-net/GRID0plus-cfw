@@ -186,6 +186,17 @@ it cannot.
   errors are skipped. The validator still repairs its copy, so an illegal
   ability shows as the default to others instead of kicking anyone.
   Regenerate with `python3 tools/make_s3_gearcheck.py [main.flat]`.
+- **`s3loadout_keep`**, eight patches, for the same build, on top of
+  `s3gearcheck_bypass`. Without it, the repairs above turn a Grizzco or Free
+  weapon into the Splattershot Jr. and an out-of-table or over-level gear piece
+  into the starter piece, and a Grizzco weapon still ends the match with a comm
+  error right after "Battle Time". It removes the weapon repairs in the loadout
+  builder, the validator and match setup, two remaining kicks, and the gear
+  checker's "piece exists and is allowed" step (`0x7103583010`), so players keep
+  what they picked. Every console checks every player's loadout itself, so
+  everyone in the match needs it. Confirmed on hardware 2026-11-23 with a
+  Grizzco weapon and an illegal shirt. Regenerate with
+  `python3 tools/make_s3_loadout_keep.py [main.flat]`.
 - **`bcat_signature_bypass`**, one patch, for the `bcat` sysmodule build
   `6D9772A7…` that firmware **22.5.0** ships. It replaces the boolean BCAT
   stores from its central RSA verification callback, that callback's own
